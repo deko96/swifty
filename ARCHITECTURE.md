@@ -153,7 +153,7 @@ module SDK — the API contract is a shared package, not documentation.
 | Queue/cache | **Redis + BullMQ** | Install jobs, backups, webhooks, schedule fan-out |
 | Realtime | Native WebSockets | Console relays, live stats, install progress |
 | Frontend | **React + Vite** SPA | Shares types with the API via the monorepo; theme system on top |
-| Repo layout | **Bun workspaces monorepo** | `apps/panel-api`, `apps/panel-web`, `packages/sdk` (public module/API types), `packages/templates`, `daemon/` (Go) |
+| Repo layout | **Bun workspaces monorepo** | `apps/api`, `apps/web`, `packages/sdk` (public module/API types), `packages/templates`, `daemon/` (Go) |
 
 Honest tradeoff, accepted: the legacy hosting/WHMCS crowd is PHP-native, so
 some would-be module authors won't follow. In exchange you get the much
@@ -284,7 +284,7 @@ day one — bolted-on plugin systems always leak.
 
 | Phase | Scope |
 |---|---|
-| **0. Skeleton** | Monorepo layout (`apps/panel-api`, `apps/panel-web`, `packages/sdk`, `packages/templates`, `daemon/`), CI, MIT license + trademark policy, contributing guide |
+| **0. Skeleton** | Monorepo layout (`apps/api`, `apps/web`, `packages/sdk`, `packages/templates`, `daemon/`), CI, MIT license + trademark policy, contributing guide |
 | **1. Single-node MVP** | Panel auth + server CRUD, daemon with systemd-scoped processes, console over WS, CS 1.6 + Minecraft templates, file manager + SFTP |
 | **2. Multi-node + API** | Node registration, allocations, public REST API, schedules, backups, audit log, query/stats |
 | **3. Module system** | Extension points, module loader, first paid module (WHMCS) — dogfood the API by building it as a real module |

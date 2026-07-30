@@ -1,5 +1,5 @@
 {
-  "name": "@swifty/panel-api",
+  "name": "@swifty/api",
   "version": "0.1.0",
   "private": true,
   "description": "Swifty panel REST API — NestJS on Bun.",

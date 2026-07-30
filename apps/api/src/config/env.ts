@@ -1,9 +1,5 @@
 import { z } from 'zod';
 
-/**
- * Environment schema — the single source of truth for panel configuration.
- * Boot fails fast with a readable error when a variable is missing or invalid.
- */
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   HTTP_HOST: z.string().default('0.0.0.0'),

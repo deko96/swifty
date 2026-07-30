@@ -10,8 +10,8 @@
         "typescript": "^5.7.0",
       },
     },
-    "apps/panel-api": {
-      "name": "@swifty/panel-api",
+    "apps/api": {
+      "name": "@swifty/api",
       "version": "0.1.0",
       "dependencies": {
         "@nestjs/common": "^11.0.0",
@@ -28,8 +28,8 @@
         "@types/express": "^5.0.0",
       },
     },
-    "apps/panel-web": {
-      "name": "@swifty/panel-web",
+    "apps/web": {
+      "name": "@swifty/web",
       "version": "0.1.0",
       "dependencies": {
         "react": "^19.0.0",
@@ -240,13 +240,13 @@
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.62.3", "", { "os": "win32", "cpu": "x64" }, "sha512-MOG/3gTOn4Fwf574RVOaY61I5o6P90legkFADiTyn1hyjNydT+cerU2rLUwPdZkKKyJ+iT+K9p7WXK4LM1Ka6g=="],
 
-    "@swifty/panel-api": ["@swifty/panel-api@workspace:apps/panel-api"],
-
-    "@swifty/panel-web": ["@swifty/panel-web@workspace:apps/panel-web"],
+    "@swifty/api": ["@swifty/api@workspace:apps/api"],
 
     "@swifty/sdk": ["@swifty/sdk@workspace:packages/sdk"],
 
     "@swifty/templates": ["@swifty/templates@workspace:packages/templates"],
+
+    "@swifty/web": ["@swifty/web@workspace:apps/web"],
 
     "@tokenizer/inflate": ["@tokenizer/inflate@0.4.1", "", { "dependencies": { "debug": "^4.4.3", "token-types": "^6.1.1" } }, "sha512-2mAv+8pkG6GIZiF1kNg1jAjh27IDxEPKwdGul3snfztFerfPGI1LjDezZp3i7BElXompqEtPmoPx6c2wgtWsOA=="],
 

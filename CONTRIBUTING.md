@@ -41,13 +41,13 @@ The monorepo uses Bun workspaces. TypeScript code lives in `apps/*`
 We follow [Conventional Commits](https://www.conventionalcommits.org):
 
 ```
-feat(panel-api): add server power actions endpoint
+feat(api): add server power actions endpoint
 fix(daemon): reap zombie processes after crash restarts
 docs: clarify template variable rules
 ```
 
 Common types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`, `ci`.
-Scope by workspace where it helps: `panel-api`, `panel-web`, `sdk`,
+Scope by workspace where it helps: `api`, `web`, `sdk`,
 `templates`, `daemon`.
 
 ### Code style

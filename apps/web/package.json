@@ -1,5 +1,5 @@
 {
-  "name": "@swifty/panel-web",
+  "name": "@swifty/web",
   "version": "0.1.0",
   "private": true,
   "description": "Swifty panel web UI — React + Vite.",

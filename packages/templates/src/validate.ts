@@ -1,7 +1,3 @@
-/**
- * Validates every template in `games/` against the schema.
- * Run via `bun run test`; exits non-zero on the first invalid template.
- */
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parse } from 'yaml';

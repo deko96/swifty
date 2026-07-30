@@ -6,7 +6,6 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // Forward API calls to the panel-api dev server.
       '/api': 'http://localhost:3000',
     },
   },

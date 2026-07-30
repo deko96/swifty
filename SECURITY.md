@@ -9,7 +9,7 @@ take security reports seriously.
 
 Use GitHub's private vulnerability reporting instead: on the repository page,
 go to **Security → Report a vulnerability**. Include reproduction steps, the
-affected component (`panel-api`, `panel-web`, `daemon`, `sdk`), and impact.
+affected component (`api`, `web`, `daemon`, `sdk`), and impact.
 
 You can expect an acknowledgement within 72 hours. Please give us a
 reasonable window to ship a fix before public disclosure — we will credit

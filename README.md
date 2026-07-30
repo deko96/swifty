@@ -26,8 +26,8 @@ Read the full design in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 | Path | Description |
 |---|---|
-| [`apps/panel-api`](apps/panel-api) | REST API — NestJS on Bun |
-| [`apps/panel-web`](apps/panel-web) | Web UI — React + Vite |
+| [`apps/api`](apps/api) | REST API — NestJS on Bun |
+| [`apps/web`](apps/web) | Web UI — React + Vite |
 | [`packages/sdk`](packages/sdk) | `@swifty/sdk` — typed module & event contract |
 | [`packages/templates`](packages/templates) | Official game templates + schema |
 | [`daemon`](daemon) | `swiftyd` node daemon — Go |
@@ -40,11 +40,11 @@ Prerequisites: [Bun](https://bun.sh) ≥ 1.3, [Go](https://go.dev) ≥ 1.24.
 bun install
 
 # Panel API (http://localhost:3000/api/v1/health)
-cp apps/panel-api/.env.example apps/panel-api/.env
-bun run --filter @swifty/panel-api dev
+cp apps/api/.env.example apps/api/.env
+bun run --filter @swifty/api dev
 
 # Web UI (http://localhost:5173, proxies /api to the panel API)
-bun run --filter @swifty/panel-web dev
+bun run --filter @swifty/web dev
 
 # Node daemon
 cd daemon && go build -o bin/swiftyd ./cmd/swiftyd
