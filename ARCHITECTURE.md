@@ -34,7 +34,7 @@ flowchart LR
 
     subgraph "Panel host"
         P[Panel<br/>Web UI + REST API]
-        DB[(MySQL/MariaDB)]
+        DB[(PostgreSQL)]
         R[(Redis<br/>cache + queues)]
     end
 
@@ -138,20 +138,28 @@ weaker default isolation, which the tiered hardening above addresses.
 
 ## 4. The panel
 
-### 4.1 Stack recommendation
+### 4.1 Stack (decided: full-stack TypeScript)
 
-Two viable paths — pick based on who you want contributing:
+The panel is **TypeScript end to end**, run on **Bun**. The big win over a
+split-language stack: one type system spans the API, the frontend, and the
+module SDK — the API contract is a shared package, not documentation.
 
-| | **A. PHP / Laravel + Vue or React** (recommended) | B. Go API + React SPA |
+| Layer | Choice | Notes |
 |---|---|---|
-| Community | The game-hosting world (WHMCS, Pterodactyl ecosystem, Balkan hosting scene) lives in PHP — biggest contributor & module-author pool | Smaller pool for this niche |
-| Deployment | Familiar to every host (nginx + php-fpm + MySQL) | Single binary — simplest possible |
-| Plugin story | Mature: Composer packages, Laravel service providers, event hooks | You'd build plugin loading yourself (Go plugins are painful) |
-| Velocity | Batteries included: auth, queues, notifications, Eloquent | More plumbing to write |
+| Runtime | **Bun** | Fast startup, built-in bundler/test runner, Node-compatible — Node LTS remains a supported fallback target so hosts aren't forced onto Bun |
+| API framework | **NestJS** | Its DI + dynamic-module system is a near-perfect substrate for the plugin architecture (§6) — modules *are* Nest modules. Hono/Elysia are leaner but would mean hand-rolling DI, lifecycle, and plugin loading |
+| ORM | **Drizzle** | TS-first, no codegen step, runs on Bun, migrations as SQL |
+| Database | **PostgreSQL** | Better JSON, row locking, advisory locks for schedulers; MySQL/MariaDB support can come later via Drizzle if hosts demand it |
+| Queue/cache | **Redis + BullMQ** | Install jobs, backups, webhooks, schedule fan-out |
+| Realtime | Native WebSockets | Console relays, live stats, install progress |
+| Frontend | **React + Vite** SPA | Shares types with the API via the monorepo; theme system on top |
+| Repo layout | **Bun workspaces monorepo** | `apps/panel-api`, `apps/panel-web`, `packages/sdk` (public module/API types), `packages/templates`, `daemon/` (Go) |
 
-Given the goal of a module marketplace and community reputation,
-**Laravel 11+ with a Vue 3/Inertia (or React) frontend, MySQL/MariaDB, and
-Redis** is the pragmatic choice. The daemon stays Go regardless.
+Honest tradeoff, accepted: the legacy hosting/WHMCS crowd is PHP-native, so
+some would-be module authors won't follow. In exchange you get the much
+larger modern JS pool, a single language for contributors across frontend
+and backend, and `@swifty/sdk` as a typed, versioned contract that makes
+third-party modules far harder to break. The daemon stays Go regardless.
 
 ### 4.2 Core panel domains
 
@@ -216,31 +224,34 @@ day one — bolted-on plugin systems always leak.
 
 ### 6.1 Technical extension points
 
-- **Backend**: modules are Composer packages implementing a
-  `SwiftyModule` contract — service provider + manifest (name, version,
-  license requirements, permissions). They can register routes, event
-  listeners (every core action fires an event: `ServerCreated`,
-  `ServerStarted`, …), scheduled jobs, nav items, and settings panes.
+- **Backend**: modules are npm packages implementing the `SwiftyModule`
+  contract from `@swifty/sdk` — a NestJS dynamic module plus a manifest
+  (name, version, required panel API version, license requirements,
+  permissions). Loaded at boot via dynamic `import()` from a modules
+  directory. They can register routes, event listeners (every core action
+  emits a typed event: `ServerCreated`, `ServerStarted`, …), BullMQ jobs,
+  nav items, and settings panes.
 - **Frontend**: named UI slots (`server.header`, `dashboard.widgets`,
-  `admin.nav`, …) that modules fill with components; theme system separate
-  from modules.
+  `admin.nav`, …) that modules fill with React components, shipped as
+  prebuilt ESM bundles loaded at runtime via import maps (no panel rebuild
+  to install a module); theme system separate from modules.
 - **Daemon**: keep it lean — daemon-side extensibility via a small hook/
   exec interface (e.g., backup drivers, custom query protocols), not a full
   plugin runtime.
-- **Stability contract**: modules may only touch the public PHP API +
-  events + REST API. Semver the module API independently of the panel.
+- **Stability contract**: modules may only touch `@swifty/sdk` exports,
+  typed events, and the REST API. Semver the SDK independently of the
+  panel, and let TypeScript enforce the boundary at build time.
 
 ### 6.2 Licensing & monetization
 
-- **Core**: pick between **MIT/Apache-2** (maximum adoption — the
-  Pterodactyl route) and **AGPLv3** (blocks closed-source competitor
-  forks). For a reputation-first strategy, **MIT core + trademark policy**
-  ("Swifty" name/logo protected) is the recommended combo — hosts adopt
-  freely, competitors can fork the code but not the brand.
+- **Core**: **MIT** (decided) plus a trademark policy — the "Swifty"
+  name/logo stay protected, so hosts adopt freely and competitors can fork
+  the code but not the brand.
 - **Paid modules**: proprietary, distributed through your own module
-  registry with license-key activation (signed license file checked by the
-  module, phone-home optional/graceful — hosting people hate hard
-  phone-home). Realistic paid lineup:
+  registry (a private npm registry — the JS ecosystem gives you this
+  distribution channel for free) with license-key activation: a signed
+  license file verified by the module, phone-home optional/graceful —
+  hosting people hate hard phone-home. Realistic paid lineup:
   - WHMCS / WISECP / blesta billing integration (the #1 seller in this market)
   - Reseller & sub-panel system
   - Auto-deploy / node balancing
@@ -273,7 +284,7 @@ day one — bolted-on plugin systems always leak.
 
 | Phase | Scope |
 |---|---|
-| **0. Skeleton** | Repo layout (`panel/`, `daemon/`, `templates/`), CI, license, contributing guide |
+| **0. Skeleton** | Monorepo layout (`apps/panel-api`, `apps/panel-web`, `packages/sdk`, `packages/templates`, `daemon/`), CI, MIT license + trademark policy, contributing guide |
 | **1. Single-node MVP** | Panel auth + server CRUD, daemon with systemd-scoped processes, console over WS, CS 1.6 + Minecraft templates, file manager + SFTP |
 | **2. Multi-node + API** | Node registration, allocations, public REST API, schedules, backups, audit log, query/stats |
 | **3. Module system** | Extension points, module loader, first paid module (WHMCS) — dogfood the API by building it as a real module |
