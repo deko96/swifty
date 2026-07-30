@@ -1,0 +1,22 @@
+pre-commit:
+  parallel: true
+  jobs:
+    - name: biome
+      glob: '*.{ts,tsx,js,jsx,json,css}'
+      run: bunx biome check --write --no-errors-on-unmatched {staged_files}
+      stage_fixed: true
+    - name: go
+      root: daemon/
+      glob: '*.go'
+      run: gofmt -w {staged_files} && go vet ./...
+      stage_fixed: true
+
+commit-msg:
+  jobs:
+    - name: conventional-commit
+      run: bun scripts/commit-msg.ts {1}
+
+pre-push:
+  jobs:
+    - name: quality-gate
+      run: bun run check

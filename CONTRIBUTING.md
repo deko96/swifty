@@ -14,13 +14,19 @@ cd swifty
 bun install
 ```
 
-See the README's *Getting started* section for running each app. Before
-pushing, make sure the repo-wide checks pass:
+See the README's *Getting started* section for running each app.
+
+`bun install` also installs git hooks (via [lefthook](https://lefthook.dev)):
+staged files are linted on commit, commit messages are validated, and the
+full quality gate runs before every push. You can run the gate yourself at
+any time:
 
 ```sh
-bun run lint && bun run typecheck && bun run test
-cd daemon && gofmt -l . && go vet ./... && go test ./...
+bun run check
 ```
+
+It runs everything CI runs — lint, typecheck, tests, builds, and the Go
+daemon checks — and reports all failures at once.
 
 ## Project structure
 

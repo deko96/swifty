@@ -50,12 +50,10 @@ bun run --filter @swifty/web dev
 cd daemon && go build -o bin/swiftyd ./cmd/swiftyd
 ```
 
-Repo-wide checks:
+Repo-wide quality gate (also enforced by git hooks and CI):
 
 ```sh
-bun run lint        # Biome
-bun run typecheck   # tsc across all workspaces
-bun run test        # unit tests + template validation
+bun run check       # lint + typecheck + tests + builds + daemon checks
 ```
 
 ## Contributing

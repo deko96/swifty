@@ -6,10 +6,16 @@ in `daemon/`. Design decisions live in ARCHITECTURE.md.
 
 ## Commands
 
+- `bun run check` — full quality gate (lint, typecheck, tests, builds, Go
+  daemon checks); must pass before any work is considered done
 - `bun run lint` / `lint:fix` — Biome
 - `bun run typecheck` — tsc across all workspaces
 - `bun run test` — bun tests + template validation
-- Daemon: `cd daemon && gofmt -l . && go vet ./... && go test ./...`
+- Daemon only: `cd daemon && gofmt -l . && go vet ./... && go test ./...`
+
+Git hooks (lefthook, installed by `bun install`): Biome on staged files at
+commit, Conventional Commit validation on the message, `bun run check` on
+push. Never bypass them with `--no-verify`; fix the failure instead.
 
 ## Code style
 
