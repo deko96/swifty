@@ -1,0 +1,34 @@
+id: minecraft-java
+name: Minecraft (Java Edition)
+supports: [linux]
+
+install:
+  script: |
+    curl -fsSL -o server.jar "$MC_SERVER_JAR_URL"
+    echo "eula=true" > eula.txt
+
+start:
+  command: >-
+    java -Xms128M -Xmx{{env.MEMORY_MB}}M -jar server.jar nogui
+    --port {{server.port}}
+  stop: stop
+  ready_regex: 'Done \(.+\)! For help, type "help"'
+
+variables:
+  - name: MEMORY_MB
+    description: Java heap size in megabytes; keep below the server's memory limit.
+    default: 2048
+    rules: integer|between:512,32768
+    user_editable: true
+  - name: MC_SERVER_JAR_URL
+    description: Download URL of the server jar (vanilla, Paper, Purpur, ...).
+    default: https://api.papermc.io/v2/projects/paper/versions/1.21.4/builds/latest/downloads/paper.jar
+    rules: url
+    user_editable: false
+
+config_files:
+  - path: server.properties
+    parser: properties
+
+query:
+  protocol: minecraft
