@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { PORT_ENTRY } from './port-range';
 
-export const createNodeSchema = z.object({
+const nodeFields = {
   name: z
     .string()
     .min(1)
@@ -12,18 +12,25 @@ export const createNodeSchema = z.object({
     .min(1)
     .max(255)
     .describe('Hostname or IP address the panel uses to reach the daemon'),
-  daemonPort: z.int().min(1).max(65535).default(8443).describe('Port the daemon listens on'),
+  daemonPort: z.int().min(1).max(65535).describe('Port the daemon listens on'),
   public: z
     .boolean()
-    .default(true)
     .describe('Public nodes accept new servers; private ones are hidden from placement'),
   memoryMb: z.int().min(1).describe('Total memory available for game servers, in MiB'),
   diskMb: z.int().min(1).describe('Total disk available for game servers, in MiB'),
+};
+
+export const createNodeSchema = z.object({
+  ...nodeFields,
+  daemonPort: nodeFields.daemonPort.default(8443),
+  public: nodeFields.public.default(true),
 });
 
 export type CreateNodeBody = z.infer<typeof createNodeSchema>;
 
-export const updateNodeSchema = createNodeSchema.partial();
+// Built from the default-free fields: defaults in a PATCH schema would
+// silently reset daemonPort and public on every partial update.
+export const updateNodeSchema = z.object(nodeFields).partial();
 
 export type UpdateNodeBody = z.infer<typeof updateNodeSchema>;
 
