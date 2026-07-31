@@ -9,7 +9,11 @@ import (
 	"os"
 )
 
-const DefaultPath = "/etc/swifty/swiftyd.json"
+const (
+	DefaultPath    = "/etc/swifty/swiftyd.json"
+	DefaultListen  = "0.0.0.0:8443"
+	DefaultDataDir = "/opt/swifty/servers"
+)
 
 type Config struct {
 	// Listen is the host:port the daemon API binds.
@@ -26,8 +30,8 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("read config %s: %w", path, err)
 	}
 	cfg := &Config{
-		Listen:  "0.0.0.0:8443",
-		DataDir: "/opt/swifty/servers",
+		Listen:  DefaultListen,
+		DataDir: DefaultDataDir,
 	}
 	if err := json.Unmarshal(raw, cfg); err != nil {
 		return nil, fmt.Errorf("parse config %s: %w", path, err)
