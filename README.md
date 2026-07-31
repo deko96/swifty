@@ -74,6 +74,12 @@ bun run check       # lint + typecheck + tests + builds + daemon checks
 Contributions are welcome — game templates are the easiest place to start.
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
+## Supporting the project
+
+Swifty's core is free and will stay free. If it saves you time or money,
+consider [sponsoring the project](https://github.com/sponsors/deko96) —
+sponsorships fund maintenance and keep the open core moving.
+
 ## License
 
 Core panel, daemon, SDK, and official templates are [MIT licensed](LICENSE).
