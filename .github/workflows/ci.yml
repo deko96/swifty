@@ -43,11 +43,13 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
-      - name: Test
-        run: bun run test
-
       - name: Migrate database
         run: bun run --filter @swifty/api db:migrate
+        env:
+          DATABASE_URL: postgres://swifty:swifty@localhost:5432/swifty
+
+      - name: Test
+        run: bun run test
         env:
           DATABASE_URL: postgres://swifty:swifty@localhost:5432/swifty
 

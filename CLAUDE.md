@@ -10,7 +10,11 @@ in `daemon/`. Design decisions live in ARCHITECTURE.md.
   daemon checks); must pass before any work is considered done
 - `bun run lint` / `lint:fix` — Biome
 - `bun run typecheck` — tsc across all workspaces
-- `bun run test` — bun tests + template validation
+- `bun run test` — bun tests + template validation. Integration suites
+  (`*.integration.spec.ts`, declared with `describeDb`) run against
+  `DATABASE_URL`/`TEST_DATABASE_URL` inside always-rolled-back transactions
+  via `src/testing/harness.ts`, and are skipped when neither is set; CI
+  always runs them. Service-layer DB logic belongs in these, not in mocks.
 - Daemon only: `cd daemon && gofmt -l . && go vet ./... && go test ./...`
 - Database (from `apps/api`, needs `DATABASE_URL`): `bun run db:generate`
   after schema changes, `bun run db:migrate`. First admin is created via the
