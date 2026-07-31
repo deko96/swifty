@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { UserRole } from '@swifty/sdk';
+import { AgentCommands, PowerAction, ServerStatus, UserRole } from '@swifty/sdk';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { AppException } from '../../common/app.exception';
 import { DATABASE, type Database } from '../../db/database.module';
@@ -14,13 +14,16 @@ import {
   type User,
   users,
 } from '../../db/schema';
+import { AgentGatewayService } from '../agent-gateway/agent-gateway.service';
 import { EventBusService } from '../events/event-bus.service';
 import { TemplatesService } from '../templates/templates.service';
 import type { CreateServerBody, UpdateServerBody } from './servers.schemas';
 import { generateSftpPassword, sftpUsername } from './sftp';
+import { renderStartCommand } from './start-command';
 import { resolveEnv } from './variable-rules';
 
 export const SFTP_PORT = 2022;
+export const DEFAULT_PIDS_LIMIT = 256;
 
 export interface ServerWithAllocation {
   server: Server;
@@ -39,7 +42,56 @@ export class ServersService {
     @Inject(DATABASE) private readonly db: Database,
     private readonly templates: TemplatesService,
     private readonly events: EventBusService,
+    private readonly agents: AgentGatewayService,
   ) {}
+
+  async power(user: User, id: string, action: PowerAction): Promise<void> {
+    const { server, allocation } = await this.findFor(user, id);
+    const starting = action === PowerAction.Start || action === PowerAction.Restart;
+    if (starting) {
+      if (server.status === ServerStatus.Suspended) {
+        throw new AppException(409, 'servers.suspended', 'This server is suspended');
+      }
+      if (server.status !== ServerStatus.Installed) {
+        throw new AppException(
+          409,
+          'servers.not_installed',
+          'This server has not finished installing',
+        );
+      }
+      if (!allocation) {
+        throw new AppException(404, 'allocations.not_found', 'This server has no allocation');
+      }
+    }
+
+    const template = this.templates.findById(server.templateId);
+    const result = await this.agents.sendCommand(server.nodeId, AgentCommands.Power, {
+      serverId: server.id,
+      action,
+      ...(starting && allocation
+        ? {
+            command: renderStartCommand(template.start.command, {
+              server: { ip: allocation.ip, port: allocation.port },
+              env: server.env,
+            }),
+            env: server.env,
+            limits: {
+              cpuPercent: server.cpuPercent,
+              memoryMiB: server.memoryMb,
+              diskMiB: server.diskMb,
+              pids: DEFAULT_PIDS_LIMIT,
+            },
+          }
+        : {}),
+    });
+    if (!result.ok) {
+      throw new AppException(
+        502,
+        'servers.power_failed',
+        result.error ?? 'The node agent rejected the power action',
+      );
+    }
+  }
 
   async listFor(user: User): Promise<ServerWithAllocation[]> {
     const rows =

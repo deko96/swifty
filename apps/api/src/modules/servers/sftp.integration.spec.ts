@@ -4,6 +4,8 @@ import { eq } from 'drizzle-orm';
 import type { Database } from '../../db/database.module';
 import { allocations, nodes, servers, users } from '../../db/schema';
 import { createTestHarness, describeDb, expectAppError, mustExist } from '../../testing/harness';
+import { AgentRegistry } from '../agent-gateway/agent.registry';
+import { AgentGatewayService } from '../agent-gateway/agent-gateway.service';
 import { EventBusService } from '../events/event-bus.service';
 import { TemplatesService } from '../templates/templates.service';
 import { ServersService } from './servers.service';
@@ -14,7 +16,13 @@ describeDb('ServersService SFTP (integration)', () => {
   beforeAll(() => templates.onModuleInit());
   afterAll(() => harness.close());
 
-  const service = (db: Database) => new ServersService(db, templates, new EventBusService());
+  const service = (db: Database) =>
+    new ServersService(
+      db,
+      templates,
+      new EventBusService(),
+      new AgentGatewayService(new AgentRegistry()),
+    );
 
   async function seed(db: Database) {
     const [ownerRow] = await db

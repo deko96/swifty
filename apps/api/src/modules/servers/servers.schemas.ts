@@ -1,4 +1,4 @@
-import { SERVER_STATUS_VALUES } from '@swifty/sdk';
+import { POWER_ACTION_VALUES, SERVER_POWER_STATE_VALUES, SERVER_STATUS_VALUES } from '@swifty/sdk';
 import { z } from 'zod';
 
 const envSchema = z
@@ -48,7 +48,18 @@ export const serverResponseSchema = z.object({
   templateId: z.string(),
   status: z
     .enum(SERVER_STATUS_VALUES)
-    .describe('Install lifecycle state; live run state comes from the node daemon'),
+    .describe('Install lifecycle state; live run state is powerState'),
+  powerState: z
+    .enum(SERVER_POWER_STATE_VALUES)
+    .describe('Last run state reported by the node daemon'),
+  powerStateChangedAt: z.iso
+    .datetime()
+    .nullable()
+    .describe('When the run state last changed; null if the server never ran'),
+  lastExitCode: z
+    .int()
+    .nullable()
+    .describe('Exit code of the last stop or crash, when the daemon reported one'),
   cpuPercent: z.int(),
   memoryMb: z.int(),
   diskMb: z.int(),
@@ -60,3 +71,11 @@ export const serverResponseSchema = z.object({
     .describe('Primary IP:port of the server'),
   createdAt: z.iso.datetime(),
 });
+
+export const powerBodySchema = z.object({
+  action: z
+    .enum(POWER_ACTION_VALUES)
+    .describe('start boots the server, restart stop-starts it, stop is graceful, kill is not'),
+});
+
+export type PowerBody = z.infer<typeof powerBodySchema>;
