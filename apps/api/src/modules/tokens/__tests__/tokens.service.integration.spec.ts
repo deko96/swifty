@@ -40,5 +40,11 @@ describeDb('TokensService (integration)', () => {
         .set({ expiresAt: new Date(Date.now() - 1000) })
         .where(eq(oneTimeTokens.tokenHash, hashToken(token)));
       expect(await service.consume(TokenPurpose.NodeJoin, token)).toBe(false);
+
+      const [row] = await db
+        .select()
+        .from(oneTimeTokens)
+        .where(eq(oneTimeTokens.tokenHash, hashToken(token)));
+      expect(row?.usedAt).toBeNull();
     }));
 });

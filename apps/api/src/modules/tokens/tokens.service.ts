@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { TokenPurpose } from '@swifty/sdk';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, gt, isNull } from 'drizzle-orm';
 import { generateToken, hashToken, TOKEN_PREFIX, type TokenPrefix } from '../../common/crypto';
 import { DATABASE, type Database } from '../../db/database.module';
 import { oneTimeTokens } from '../../db/schema';
@@ -30,17 +30,19 @@ export class TokensService {
     token: string,
     executor: Pick<Database, 'update'> = this.db,
   ): Promise<boolean> {
+    const now = new Date();
     const [spent] = await executor
       .update(oneTimeTokens)
-      .set({ usedAt: new Date() })
+      .set({ usedAt: now })
       .where(
         and(
           eq(oneTimeTokens.tokenHash, hashToken(token)),
           eq(oneTimeTokens.purpose, purpose),
           isNull(oneTimeTokens.usedAt),
+          gt(oneTimeTokens.expiresAt, now),
         ),
       )
       .returning();
-    return spent !== undefined && spent.expiresAt >= new Date();
+    return spent !== undefined;
   }
 }
