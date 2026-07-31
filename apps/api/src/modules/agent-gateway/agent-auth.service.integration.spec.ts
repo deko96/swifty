@@ -1,11 +1,9 @@
 import { afterAll, expect, it } from 'bun:test';
 import { AGENT_PROTOCOL_VERSION } from '@swifty/sdk';
-import { eq, isNull } from 'drizzle-orm';
 import { generateToken, TOKEN_PREFIX } from '../../common/crypto';
 import type { EnvService } from '../../config/env.service';
 import type { Database } from '../../db/database.module';
-import { nodes } from '../../db/schema';
-import { createTestHarness, describeDb, mustExist } from '../../testing/harness';
+import { createTestHarness, describeDb } from '../../testing/harness';
 import { NodesService } from '../nodes/nodes.service';
 import { AgentAuthService } from './agent-auth.service';
 import type { HelloData } from './agent-gateway.schemas';
@@ -89,20 +87,5 @@ describeDb('AgentAuthService (integration)', () => {
       expect(updated.daemonVersion).toBe('0.9.4');
       expect(updated.inventory?.hostname).toBe('rs-beg-02');
       expect(updated.lastSeenAt).not.toBeNull();
-    }));
-
-  it('backfills token hashes for nodes created before the agent channel', () =>
-    harness.tx(async (db) => {
-      const service = nodesService(db);
-      const node = await service.create(nodeBody);
-      const token = service.daemonConfig(node).token;
-      await db.update(nodes).set({ tokenHash: null }).where(eq(nodes.id, node.id));
-
-      await service.onModuleInit();
-
-      const [backfilled] = await db.select().from(nodes).where(isNull(nodes.tokenHash));
-      expect(backfilled).toBeUndefined();
-      const auth = new AgentAuthService(db);
-      expect(mustExist(await auth.authenticate(`Bearer ${token}`)).id).toBe(node.id);
     }));
 });

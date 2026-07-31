@@ -1,5 +1,5 @@
 {
-  "id": "9f40e520-16a0-42e6-8904-f353d7e74e5c",
+  "id": "17f3c502-f518-458d-a4e4-e277cfbd5871",
   "prevId": "8c99c365-5a76-4319-a428-3c15017290f8",
   "version": "7",
   "dialect": "postgresql",
@@ -187,7 +187,7 @@
           "name": "token_hash",
           "type": "varchar(64)",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "public": {
           "name": "public",

@@ -1,5 +1,5 @@
-import { Inject, Injectable, Logger, type OnModuleInit } from '@nestjs/common';
-import { and, eq, isNull } from 'drizzle-orm';
+import { Inject, Injectable } from '@nestjs/common';
+import { and, eq } from 'drizzle-orm';
 import { AppException } from '../../common/app.exception';
 import {
   decryptSecret,
@@ -16,30 +16,12 @@ import type { CreateAllocationsBody, CreateNodeBody, UpdateNodeBody } from './no
 import { expandPortEntries } from './port-range';
 
 @Injectable()
-export class NodesService implements OnModuleInit {
-  private readonly logger = new Logger(NodesService.name);
-
+export class NodesService {
   constructor(
     @Inject(DATABASE) private readonly db: Database,
     private readonly env: EnvService,
     private readonly registry: AgentRegistry,
   ) {}
-
-  /**
-   * Nodes created before the agent channel have no token hash; derive it
-   * from the decryptable token so they can connect without a rotation.
-   */
-  async onModuleInit(): Promise<void> {
-    const stale = await this.db.select().from(nodes).where(isNull(nodes.tokenHash));
-    for (const node of stale) {
-      const token = decryptSecret(node.tokenEncrypted, this.env.appSecret);
-      await this.db
-        .update(nodes)
-        .set({ tokenHash: hashToken(token) })
-        .where(eq(nodes.id, node.id));
-      this.logger.log(`Backfilled token hash for node ${node.name}`);
-    }
-  }
 
   async list(): Promise<Node[]> {
     return this.db.select().from(nodes).orderBy(nodes.createdAt);

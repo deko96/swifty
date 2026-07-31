@@ -38,7 +38,6 @@ export class AgentGatewayService {
     }
     const id = randomUUID();
     socket.send(JSON.stringify({ event, data: { v: AGENT_PROTOCOL_VERSION, id, ...payload } }));
-
     return new Promise<ResultData>((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pending.delete(id);

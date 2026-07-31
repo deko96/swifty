@@ -16,9 +16,7 @@ export const nodes = pgTable('nodes', {
   fqdn: varchar('fqdn', { length: 255 }).notNull(),
   daemonPort: integer('daemon_port').notNull().default(8443),
   tokenEncrypted: text('token_encrypted').notNull(),
-  // sha256 of the plaintext token, the agent channel's lookup key; nullable
-  // only because rows predating it are backfilled at boot
-  tokenHash: varchar('token_hash', { length: 64 }).unique(),
+  tokenHash: varchar('token_hash', { length: 64 }).notNull().unique(),
   public: boolean('public').notNull().default(true),
   memoryMb: integer('memory_mb').notNull(),
   diskMb: integer('disk_mb').notNull(),

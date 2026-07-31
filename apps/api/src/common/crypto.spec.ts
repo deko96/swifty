@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'bun:test';
-import { decryptSecret, encryptSecret, generateToken, hashToken, TOKEN_PREFIX } from './crypto';
+import {
+  bearerToken,
+  decryptSecret,
+  encryptSecret,
+  generateToken,
+  hashToken,
+  TOKEN_PREFIX,
+} from './crypto';
 
 describe('generateToken', () => {
   it('prefixes tokens by kind', () => {
@@ -40,5 +47,19 @@ describe('encryptSecret / decryptSecret', () => {
     const encrypted = encryptSecret('value', secret);
     expect(() => decryptSecret(encrypted, 'other-secret-other-secret-other!')).toThrow();
     expect(() => decryptSecret(`${encrypted.slice(0, -2)}xx`, secret)).toThrow();
+  });
+});
+
+describe('bearerToken', () => {
+  it('extracts a token of the expected kind', () => {
+    const token = generateToken(TOKEN_PREFIX.Node);
+    expect(bearerToken(`Bearer ${token}`, TOKEN_PREFIX.Node)).toBe(token);
+  });
+
+  it('rejects absent, non-bearer, and wrong-kind headers', () => {
+    const token = generateToken(TOKEN_PREFIX.Node);
+    expect(bearerToken(undefined, TOKEN_PREFIX.Node)).toBeNull();
+    expect(bearerToken(token, TOKEN_PREFIX.Node)).toBeNull();
+    expect(bearerToken(`Bearer ${token}`, TOKEN_PREFIX.ApiKey)).toBeNull();
   });
 });

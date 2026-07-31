@@ -28,6 +28,7 @@ describeDb('ServersService SFTP (integration)', () => {
         name: 'n1',
         fqdn: 'node1.example.com',
         tokenEncrypted: 'x',
+        tokenHash: 'x',
         memoryMb: 16384,
         diskMb: 102400,
       })
