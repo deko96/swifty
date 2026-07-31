@@ -34,25 +34,28 @@ Read the full design in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Getting started (development)
 
-Prerequisites: [Bun](https://bun.sh) ≥ 1.3, [Go](https://go.dev) ≥ 1.24.
+Prerequisites: [Bun](https://bun.sh) ≥ 1.3, [just](https://just.systems),
+[Go](https://go.dev) ≥ 1.24.
 
 ```sh
-bun install
+just install
 
 # Dev PostgreSQL + Redis (or point .env at your own instances)
-docker compose -f compose.dev.yml up -d
+just up
 
 # Panel API (http://localhost:3000/api/v1/health)
 cp apps/api/.env.example apps/api/.env
-bun run --filter @swifty/api db:migrate
-bun run --filter @swifty/api dev
+just migrate
+just dev api
 
 # Web UI (http://localhost:5173, proxies /api to the panel API)
-bun run --filter @swifty/web dev
+just dev web
 
-# Node daemon
-cd daemon && go build -o bin/swiftyd ./cmd/swiftyd
+# Node daemon (binary at daemon/bin/swiftyd)
+just build daemon
 ```
+
+Run `just` with no arguments to list every available command.
 
 On first start the panel is unconfigured: open the web UI and the **setup
 wizard** walks you through naming the panel and creating the first admin
@@ -66,7 +69,7 @@ spec at `/api/openapi.json`).
 Repo-wide quality gate (also enforced by git hooks and CI):
 
 ```sh
-bun run check       # lint + typecheck + tests + builds + daemon checks
+just check          # lint + typecheck + tests + builds + daemon checks
 ```
 
 ## Contributing

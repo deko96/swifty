@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 # Full quality gate: run every check CI runs, report all failures at once.
+# Each gate is a just recipe so this script, CI, and manual runs stay in sync.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+
+if ! command -v just > /dev/null; then
+  printf 'error: just is not installed (https://just.systems) — try `brew install just`\n' >&2
+  exit 1
+fi
 
 failures=()
 
@@ -16,16 +22,15 @@ run() {
   fi
 }
 
-run 'lint (biome)' bun run lint
-run 'typecheck (tsc)' bun run typecheck
-run 'test (bun)' bun run test
-run 'build' bun run build
+run 'lint (biome)' just lint panel
+run 'typecheck (tsc)' just typecheck panel
+run 'test (bun)' just test panel
+run 'build' just build panel
 
 if command -v go > /dev/null; then
-  run 'gofmt' bash -c 'cd daemon && unformatted=$(gofmt -l .) && test -z "$unformatted" || { echo "$unformatted"; exit 1; }'
-  run 'go vet' bash -c 'cd daemon && go vet ./...'
-  run 'go test' bash -c 'cd daemon && go test ./...'
-  run 'go build' bash -c 'cd daemon && go build ./...'
+  run 'lint daemon (gofmt + vet)' just lint daemon
+  run 'test daemon' just test daemon
+  run 'build daemon' just build daemon
 else
   printf '\nwarning: go not installed, skipping daemon checks\n'
 fi

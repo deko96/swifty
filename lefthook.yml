@@ -19,4 +19,4 @@ commit-msg:
 pre-push:
   jobs:
     - name: quality-gate
-      run: bun run check
+      run: just check
