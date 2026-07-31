@@ -2,13 +2,14 @@ import { afterAll, expect, it } from 'bun:test';
 import { UserRole } from '@swifty/sdk';
 import type { Database } from '../../db/database.module';
 import { createTestHarness, describeDb, expectAppError } from '../../testing/harness';
+import { EventBusService } from '../events/event-bus.service';
 import { UsersService } from './users.service';
 
 describeDb('UsersService (integration)', () => {
   const harness = createTestHarness();
   afterAll(() => harness.close());
 
-  const service = (db: Database) => new UsersService(db);
+  const service = (db: Database) => new UsersService(db, new EventBusService());
 
   const admin = {
     email: 'admin@test.local',

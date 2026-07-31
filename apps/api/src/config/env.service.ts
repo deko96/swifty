@@ -29,4 +29,8 @@ export class EnvService {
   get appSecret(): string {
     return this.config.get('APP_SECRET', { infer: true });
   }
+
+  get modulesDir(): string | undefined {
+    return this.config.get('MODULES_DIR', { infer: true });
+  }
 }
