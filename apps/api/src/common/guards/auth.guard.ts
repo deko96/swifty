@@ -4,9 +4,10 @@ import { eq } from 'drizzle-orm';
 import { DATABASE, type Database } from '../../db/database.module';
 import { apiKeys, sessions, users } from '../../db/schema';
 import { AppException } from '../app.exception';
-import { hashToken, hasTokenPrefix, TOKEN_PREFIX } from '../crypto';
+import { bearerToken, hashToken, hasTokenPrefix, TOKEN_PREFIX } from '../crypto';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { type AuthenticatedRequest, SESSION_COOKIE } from '../types';
+import { isHttpContext } from './is-http-context';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -16,6 +17,10 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    if (!isHttpContext(context)) {
+      return true;
+    }
+
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -32,9 +37,9 @@ export class AuthGuard implements CanActivate {
       return true;
     }
 
-    const header = request.headers.authorization;
-    if (header?.startsWith(`Bearer ${TOKEN_PREFIX.ApiKey}_`)) {
-      request.user = await this.userFromApiKey(header.slice('Bearer '.length));
+    const apiKey = bearerToken(request.headers.authorization, TOKEN_PREFIX.ApiKey);
+    if (apiKey) {
+      request.user = await this.userFromApiKey(apiKey);
       return true;
     }
 

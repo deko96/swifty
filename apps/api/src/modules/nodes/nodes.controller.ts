@@ -155,14 +155,14 @@ export class NodesController {
   @ApiOperation({
     summary: 'Check node health',
     description:
-      'Asks the daemon on this node whether it is alive and which version it runs. Admin only.',
+      'Reports whether this node’s agent channel is connected, the daemon version it reported, and when it was last seen. Admin only.',
   })
   @ApiOkResponse({
     description: 'Reachability of the daemon.',
     schema: apiSchema(nodeHealthResponseSchema),
   })
   async health(@Param('id', ParseUUIDPipe) id: string) {
-    return this.nodesService.checkHealth(await this.nodesService.findById(id));
+    return this.nodesService.health(await this.nodesService.findById(id));
   }
 
   @Get(':id/allocations')

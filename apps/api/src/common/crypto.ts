@@ -17,6 +17,20 @@ export function hasTokenPrefix(token: string, prefix: TokenPrefix): boolean {
   return token.startsWith(`${prefix}_`);
 }
 
+const BEARER_SCHEME = 'Bearer ';
+
+/**
+ * Extracts a token of the expected kind from an Authorization header;
+ * null when the header is absent, not Bearer, or carries another kind.
+ */
+export function bearerToken(header: string | undefined, prefix: TokenPrefix): string | null {
+  if (!header?.startsWith(BEARER_SCHEME)) {
+    return null;
+  }
+  const token = header.slice(BEARER_SCHEME.length);
+  return hasTokenPrefix(token, prefix) ? token : null;
+}
+
 export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }

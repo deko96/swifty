@@ -4,12 +4,17 @@ import type { UserRole } from '@swifty/sdk';
 import { AppException } from '../app.exception';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import type { AuthenticatedRequest } from '../types';
+import { isHttpContext } from './is-http-context';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    if (!isHttpContext(context)) {
+      return true;
+    }
+
     const required = this.reflector.getAllAndOverride<UserRole[] | undefined>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),

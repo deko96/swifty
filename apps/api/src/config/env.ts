@@ -8,6 +8,7 @@ export const envSchema = z.object({
   REDIS_URL: z.url().startsWith('redis'),
   APP_SECRET: z.string().min(32),
   MODULES_DIR: z.string().min(1).optional(),
+  PANEL_URL: z.url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

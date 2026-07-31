@@ -36,6 +36,7 @@ describeDb('ServersService (integration)', () => {
         name: 'n1',
         fqdn: 'n1.local',
         tokenEncrypted: 'x',
+        tokenHash: 'x',
         memoryMb: 16384,
         diskMb: 102400,
       })
@@ -114,7 +115,14 @@ describeDb('ServersService (integration)', () => {
 
       const [otherNode] = await db
         .insert(nodes)
-        .values({ name: 'n2', fqdn: 'n2.local', tokenEncrypted: 'x', memoryMb: 1, diskMb: 1 })
+        .values({
+          name: 'n2',
+          fqdn: 'n2.local',
+          tokenEncrypted: 'x',
+          tokenHash: 'x2',
+          memoryMb: 1,
+          diskMb: 1,
+        })
         .returning();
       await expectAppError(
         servers.create({ ...body(f), nodeId: mustExist(otherNode).id, allocationId: f.spare.id }),

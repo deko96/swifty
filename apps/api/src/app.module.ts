@@ -3,10 +3,12 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { AuthGuard } from './common/guards/auth.guard';
+import { isHttpContext } from './common/guards/is-http-context';
 import { RolesGuard } from './common/guards/roles.guard';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { EnvModule } from './config/env.module';
 import { DatabaseModule } from './db/database.module';
+import { AgentGatewayModule } from './modules/agent-gateway/agent-gateway.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { EventsModule } from './modules/events/events.module';
 import { HealthModule } from './modules/health/health.module';
@@ -24,8 +26,12 @@ import { UsersModule } from './modules/users/users.module';
     DatabaseModule,
     SettingsModule,
     EventsModule,
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
+    ThrottlerModule.forRoot({
+      throttlers: [{ ttl: 60_000, limit: 120 }],
+      skipIf: (context) => !isHttpContext(context),
+    }),
     HealthModule,
+    AgentGatewayModule,
     AuthModule,
     SetupModule,
     UsersModule,

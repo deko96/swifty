@@ -33,4 +33,8 @@ export class EnvService {
   get modulesDir(): string | undefined {
     return this.config.get('MODULES_DIR', { infer: true });
   }
+
+  get panelUrl(): string | undefined {
+    return this.config.get('PANEL_URL', { infer: true });
+  }
 }

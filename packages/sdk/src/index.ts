@@ -12,7 +12,13 @@ export type {
   PortProbe,
   ResourceLimits,
 } from './agent';
-export { AGENT_PROTOCOL_VERSION, PORT_PROTOCOL_VALUES, PortProtocol } from './agent';
+export {
+  AGENT_PROTOCOL_VERSION,
+  AgentCommands,
+  AgentEvents,
+  PORT_PROTOCOL_VALUES,
+  PortProtocol,
+} from './agent';
 export {
   POWER_ACTION_VALUES,
   PowerAction,

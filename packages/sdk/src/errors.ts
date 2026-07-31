@@ -23,6 +23,8 @@ export const ERROR_CODES = [
   'nodes.not_found',
   'nodes.name_taken',
   'nodes.has_servers',
+  'nodes.offline',
+  'nodes.command_timeout',
   'allocations.not_found',
   'allocations.in_use',
   'allocations.range_too_large',

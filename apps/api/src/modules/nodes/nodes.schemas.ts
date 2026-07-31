@@ -52,8 +52,12 @@ export const nodeConfigResponseSchema = z.object({
 });
 
 export const nodeHealthResponseSchema = z.object({
-  online: z.boolean().describe('Whether the panel could reach the daemon just now'),
-  version: z.string().optional().describe('Daemon version reported by the node, when online'),
+  online: z.boolean().describe('Whether the node’s agent channel is connected right now'),
+  version: z.string().optional().describe('Daemon version the node reported when it connected'),
+  lastSeenAt: z
+    .date()
+    .nullable()
+    .describe('When the node was last seen on the agent channel; null if it never connected'),
 });
 
 export const createAllocationsSchema = z.object({
