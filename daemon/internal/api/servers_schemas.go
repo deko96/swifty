@@ -3,16 +3,10 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-	"regexp"
 
 	"github.com/deko96/swifty/daemon/internal/agent"
 	"github.com/deko96/swifty/daemon/internal/supervisor"
 )
-
-// Server IDs become unit names and filesystem paths, so only canonical
-// lowercase UUIDs are accepted.
-var serverIDPattern = regexp.MustCompile(
-	`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
 const errBadServerID = "id must be a lowercase UUID"
 
@@ -60,7 +54,7 @@ func validateStart(body powerBody) string {
 
 func pathID(w http.ResponseWriter, r *http.Request) (string, bool) {
 	id := r.PathValue("id")
-	if !serverIDPattern.MatchString(id) {
+	if !supervisor.ValidID(id) {
 		writeError(w, http.StatusBadRequest, errBadServerID)
 		return "", false
 	}

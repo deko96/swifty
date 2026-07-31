@@ -46,7 +46,7 @@ func (h *serverHandlers) create(w http.ResponseWriter, r *http.Request) {
 	if !decodeBody(w, r, &body) {
 		return
 	}
-	if !serverIDPattern.MatchString(body.ID) {
+	if !supervisor.ValidID(body.ID) {
 		writeError(w, http.StatusBadRequest, errBadServerID)
 		return
 	}
