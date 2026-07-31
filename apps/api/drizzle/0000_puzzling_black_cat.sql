@@ -25,7 +25,7 @@ CREATE TABLE "nodes" (
 	"name" varchar(64) NOT NULL,
 	"fqdn" varchar(255) NOT NULL,
 	"daemon_port" integer DEFAULT 8443 NOT NULL,
-	"token_hash" text NOT NULL,
+	"token_encrypted" text NOT NULL,
 	"public" boolean DEFAULT true NOT NULL,
 	"memory_mb" integer NOT NULL,
 	"disk_mb" integer NOT NULL,

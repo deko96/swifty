@@ -177,12 +177,6 @@
           "notNull": true,
           "default": 8443
         },
-        "token_hash": {
-          "name": "token_hash",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "public": {
           "name": "public",
           "type": "boolean",
@@ -215,6 +209,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "token_encrypted": {
+          "name": "token_encrypted",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         }
       },
       "indexes": {},
