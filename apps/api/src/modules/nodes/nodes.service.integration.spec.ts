@@ -1,4 +1,5 @@
 import { afterAll, expect, it } from 'bun:test';
+import { TOKEN_PREFIX } from '../../common/crypto';
 import type { EnvService } from '../../config/env.service';
 import type { Database } from '../../db/database.module';
 import { allocations, servers, users } from '../../db/schema';
@@ -25,10 +26,10 @@ describeDb('NodesService (integration)', () => {
     harness.tx(async (db) => {
       const nodes = service(db);
       const node = await nodes.create(nodeBody);
-      expect(node.tokenEncrypted).not.toContain('node_');
+      expect(node.tokenEncrypted).not.toContain(`${TOKEN_PREFIX.Node}_`);
 
       const config = nodes.daemonConfig(node);
-      expect(config.token).toStartWith('node_');
+      expect(config.token).toStartWith(`${TOKEN_PREFIX.Node}_`);
       expect(config.listen).toBe('0.0.0.0:8443');
     }));
 
@@ -39,7 +40,7 @@ describeDb('NodesService (integration)', () => {
       const before = nodes.daemonConfig(node).token;
       const rotated = await nodes.rotateToken(node.id);
       const after = nodes.daemonConfig(rotated).token;
-      expect(after).toStartWith('node_');
+      expect(after).toStartWith(`${TOKEN_PREFIX.Node}_`);
       expect(after).not.toBe(before);
     }));
 

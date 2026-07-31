@@ -1,4 +1,4 @@
-import type { ApiErrorBody, ErrorCode, ValidationDetail } from '@swifty/sdk';
+import type { ApiErrorBody, ErrorCode, UserRole, ValidationDetail } from '@swifty/sdk';
 
 export class ApiError extends Error {
   constructor(
@@ -51,7 +51,7 @@ export interface UserResponse {
   id: string;
   email: string;
   username: string;
-  role: 'admin' | 'user';
+  role: UserRole;
   createdAt: string;
 }
 

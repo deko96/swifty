@@ -43,6 +43,13 @@ push. Never bypass them with `--no-verify`; fix the failure instead.
 
 ## Code style
 
+- No magic strings. Shared literals live as named constants and everything
+  derives from them: roles and server statuses come from `@swifty/sdk`
+  (`UserRole`, `ServerStatus` — pgEnums and zod enums are built from their
+  `*_VALUES` tuples), token prefixes from `TOKEN_PREFIX` in
+  `apps/api/src/common/crypto.ts`, settings keys and cookie names from their
+  exported constants. Comparing or storing a raw `'admin'`-style literal is
+  a review blocker.
 - Code must be self-descriptive. Do not write comments that narrate what the
   code does, restate types, or justify a change — no comments is the default.
   A comment is acceptable only for a non-obvious constraint the code cannot

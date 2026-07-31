@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TOKEN_PREFIX } from '../../common/crypto';
 
 export const setupStatusSchema = z.object({
   required: z
@@ -9,7 +10,7 @@ export const setupStatusSchema = z.object({
 export const completeSetupSchema = z.object({
   setupCode: z
     .string()
-    .startsWith('setup_')
+    .startsWith(`${TOKEN_PREFIX.Setup}_`)
     .describe('One-time code printed in the panel console when it starts unconfigured'),
   panelName: z.string().min(1).max(64).describe('Display name of this panel, e.g. your brand'),
   admin: z.object({

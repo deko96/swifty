@@ -10,8 +10,10 @@ import { DatabaseModule } from './db/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { NodesModule } from './modules/nodes/nodes.module';
+import { ServersModule } from './modules/servers/servers.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { SetupModule } from './modules/setup/setup.module';
+import { TemplatesModule } from './modules/templates/templates.module';
 import { UsersModule } from './modules/users/users.module';
 
 @Module({
@@ -25,6 +27,8 @@ import { UsersModule } from './modules/users/users.module';
     SetupModule,
     UsersModule,
     NodesModule,
+    TemplatesModule,
+    ServersModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },

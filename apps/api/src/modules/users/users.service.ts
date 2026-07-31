@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { UserRole } from '@swifty/sdk';
 import { eq } from 'drizzle-orm';
 import { AppException } from '../../common/app.exception';
 import { DATABASE, type Database } from '../../db/database.module';
@@ -60,11 +61,11 @@ export class UsersService {
 
   async delete(id: string): Promise<void> {
     const user = await this.findById(id);
-    if (user.role === 'admin') {
+    if (user.role === UserRole.Admin) {
       const admins = await this.db
         .select({ id: users.id })
         .from(users)
-        .where(eq(users.role, 'admin'))
+        .where(eq(users.role, UserRole.Admin))
         .limit(2);
       if (admins.length < 2) {
         throw new AppException(400, 'users.last_admin', 'Cannot delete the last admin account');
