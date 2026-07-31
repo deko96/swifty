@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { Injectable } from '@nestjs/common';
 import { AGENT_PROTOCOL_VERSION, type AgentCommandMap, type AgentCommandName } from '@swifty/sdk';
 import { AppException } from '../../common/app.exception';
+import { AgentRegistry } from './agent.registry';
 import type { ResultData } from './agent-gateway.schemas';
-import { AgentRegistry } from './agent-registry';
 
 const COMMAND_TIMEOUT_MS = 10_000;
 

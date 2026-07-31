@@ -12,6 +12,7 @@ import { AGENT_PROTOCOL_VERSION, AgentEvents } from '@swifty/sdk';
 import type { WebSocket } from 'ws';
 import type { ZodType } from 'zod';
 import { EventBusService } from '../events/event-bus.service';
+import { AgentRegistry, WS_CLOSE_POLICY_VIOLATION } from './agent.registry';
 import { AgentAuthService } from './agent-auth.service';
 import {
   helloDataSchema,
@@ -20,7 +21,6 @@ import {
   stateDataSchema,
 } from './agent-gateway.schemas';
 import { AgentGatewayService } from './agent-gateway.service';
-import { AgentRegistry, WS_CLOSE_POLICY_VIOLATION } from './agent-registry';
 
 export const AGENT_CHANNEL_PATH = '/agent';
 

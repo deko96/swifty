@@ -12,7 +12,7 @@ import { satisfies } from 'semver';
 import { EnvService } from '../../config/env.service';
 import { EventBusService } from '../events/event-bus.service';
 import { SettingsService } from '../settings/settings.service';
-import { manifestSchema } from './manifest.schema';
+import { manifestSchema } from './manifest.schemas';
 import { buildModuleContext } from './module-context';
 
 const ENTRY_CANDIDATES = ['index.ts', 'index.js', 'index.mjs'];
