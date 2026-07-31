@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Test coverage
+coverage/
+
+# Go daemon
+daemon/bin/
+
+# Editor & OS noise
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log

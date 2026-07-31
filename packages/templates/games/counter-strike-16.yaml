@@ -1,0 +1,34 @@
+id: counter-strike-16
+name: Counter-Strike 1.6
+supports: [linux]
+
+install:
+  script: |
+    steamcmd +force_install_dir "$SERVER_DIR" +login anonymous \
+      +app_set_config 90 mod cstrike +app_update 90 validate +quit
+
+start:
+  command: >-
+    ./hlds_run -game cstrike -strictportbind +ip {{server.ip}} +port {{server.port}}
+    +map {{env.DEFAULT_MAP}} +maxplayers {{env.MAX_PLAYERS}}
+  stop: quit
+  ready_regex: 'VAC secure mode is activated'
+
+variables:
+  - name: MAX_PLAYERS
+    description: Maximum number of player slots.
+    default: 32
+    rules: integer|between:2,32
+    user_editable: true
+  - name: DEFAULT_MAP
+    description: Map loaded on server start.
+    default: de_dust2
+    rules: string|max:64
+    user_editable: true
+
+config_files:
+  - path: cstrike/server.cfg
+    parser: keyvalue
+
+query:
+  protocol: a2s
