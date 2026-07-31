@@ -32,7 +32,7 @@ import { errorResponseSchema } from '../../common/error.schemas';
 import { apiSchema } from '../../common/openapi';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { EnvService } from '../../config/env.service';
-import { renderInstallScript } from './install-script';
+import { renderInstallScript } from './domain/install-script';
 import {
   allocationResponseSchema,
   type CreateAllocationsBody,

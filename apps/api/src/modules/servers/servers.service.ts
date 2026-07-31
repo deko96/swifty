@@ -17,10 +17,10 @@ import {
 import { AgentGatewayService } from '../agent-gateway/agent-gateway.service';
 import { EventBusService } from '../events/event-bus.service';
 import { TemplatesService } from '../templates/templates.service';
+import { generateSftpPassword, sftpUsername } from './domain/sftp';
+import { renderStartCommand } from './domain/start-command';
+import { resolveEnv } from './domain/variable-rules';
 import type { CreateServerBody, UpdateServerBody } from './servers.schemas';
-import { generateSftpPassword, sftpUsername } from './sftp';
-import { renderStartCommand } from './start-command';
-import { resolveEnv } from './variable-rules';
 
 export const SFTP_PORT = 2022;
 export const DEFAULT_PIDS_LIMIT = 256;

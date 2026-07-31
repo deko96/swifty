@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PORT_ENTRY } from './port-range';
+import { PORT_ENTRY } from './domain/port-range';
 
 const nodeFields = {
   name: z

@@ -68,3 +68,15 @@ export const SERVER_POWER_STATE_VALUES = [
   ServerPowerState.Stopping,
   ServerPowerState.Crashed,
 ] as const;
+
+/**
+ * What a one-time token entitles its bearer to do. Issued hashed, spent on
+ * first use; a token is only valid for the purpose it was issued for.
+ */
+export const TokenPurpose = {
+  NodeJoin: 'node_join',
+} as const;
+
+export type TokenPurpose = (typeof TokenPurpose)[keyof typeof TokenPurpose];
+
+export const TOKEN_PURPOSE_VALUES = [TokenPurpose.NodeJoin] as const;

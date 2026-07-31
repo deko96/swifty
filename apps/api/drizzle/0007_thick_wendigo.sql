@@ -1,0 +1,1 @@
+DROP TABLE "node_join_tokens" CASCADE;
