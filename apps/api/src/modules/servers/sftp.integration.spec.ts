@@ -2,8 +2,8 @@ import { afterAll, beforeAll, expect, it } from 'bun:test';
 import { UserRole } from '@swifty/sdk';
 import { eq } from 'drizzle-orm';
 import type { Database } from '../../db/database.module';
-import { allocations, nodes, servers, type User, users } from '../../db/schema';
-import { createTestHarness, describeDb, expectAppError } from '../../testing/harness';
+import { allocations, nodes, servers, users } from '../../db/schema';
+import { createTestHarness, describeDb, expectAppError, mustExist } from '../../testing/harness';
 import { EventBusService } from '../events/event-bus.service';
 import { TemplatesService } from '../templates/templates.service';
 import { ServersService } from './servers.service';
@@ -17,11 +17,12 @@ describeDb('ServersService SFTP (integration)', () => {
   const service = (db: Database) => new ServersService(db, templates, new EventBusService());
 
   async function seed(db: Database) {
-    const [owner] = await db
+    const [ownerRow] = await db
       .insert(users)
       .values({ email: 'owner@t.local', username: 'owner', passwordHash: 'x' })
       .returning();
-    const [node] = await db
+    const owner = mustExist(ownerRow);
+    const [nodeRow] = await db
       .insert(nodes)
       .values({
         name: 'n1',
@@ -31,24 +32,25 @@ describeDb('ServersService SFTP (integration)', () => {
         diskMb: 102400,
       })
       .returning();
+    const node = mustExist(nodeRow);
     const [alloc] = await db
       .insert(allocations)
-      .values({ nodeId: node!.id, ip: '10.0.0.1', port: 27015 })
+      .values({ nodeId: node.id, ip: '10.0.0.1', port: 27015 })
       .returning();
 
     const svc = service(db);
     const { server } = await svc.create({
       name: 'cs',
-      ownerId: owner!.id,
-      nodeId: node!.id,
-      allocationId: alloc!.id,
+      ownerId: owner.id,
+      nodeId: node.id,
+      allocationId: mustExist(alloc).id,
       templateId: 'counter-strike-16',
       cpuPercent: 100,
       memoryMb: 1024,
       diskMb: 10240,
       env: {},
     });
-    return { svc, owner: owner as User, node: node!, server };
+    return { svc, owner, node, server };
   }
 
   it('assigns a stable SFTP username at creation, no password yet', () =>
@@ -110,7 +112,7 @@ describeDb('ServersService SFTP (integration)', () => {
         .values({ email: 's@t.local', username: 'stranger', passwordHash: 'x' })
         .returning();
       await expectAppError(
-        svc.rotateSftpPassword(stranger as User, server.id),
+        svc.rotateSftpPassword(mustExist(stranger), server.id),
         'servers.not_found',
       );
     }));
@@ -122,7 +124,7 @@ describeDb('ServersService SFTP (integration)', () => {
         .insert(users)
         .values({ email: 'a@t.local', username: 'admin', passwordHash: 'x', role: UserRole.Admin })
         .returning();
-      const { password } = await svc.rotateSftpPassword(admin as User, server.id);
+      const { password } = await svc.rotateSftpPassword(mustExist(admin), server.id);
       expect(await svc.verifySftp(server.sftpUsername, password)).toEqual({ serverId: server.id });
     }));
 });
