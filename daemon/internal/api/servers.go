@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/deko96/swifty/daemon/internal/agent"
 	"github.com/deko96/swifty/daemon/internal/supervisor"
 )
 
@@ -93,7 +94,7 @@ func (h *serverHandlers) power(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if body.Action == PowerStart || body.Action == PowerRestart {
+	if body.Action == agent.PowerStart || body.Action == agent.PowerRestart {
 		if message := validateStart(body); message != "" {
 			writeError(w, http.StatusBadRequest, message)
 			return
@@ -102,15 +103,15 @@ func (h *serverHandlers) power(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 	switch body.Action {
-	case PowerStart:
+	case agent.PowerStart:
 		err = h.manager.Start(r.Context(), h.startSpec(id, body))
-	case PowerRestart:
+	case agent.PowerRestart:
 		// the unit may not be running; a fresh start must succeed regardless
 		_ = h.manager.Stop(r.Context(), id)
 		err = h.manager.Start(r.Context(), h.startSpec(id, body))
-	case PowerStop:
+	case agent.PowerStop:
 		err = h.manager.Stop(r.Context(), id)
-	case PowerKill:
+	case agent.PowerKill:
 		err = h.manager.Kill(r.Context(), id)
 	default:
 		writeError(w, http.StatusBadRequest, "action must be start, restart, stop, or kill")

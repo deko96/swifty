@@ -1,0 +1,9 @@
+{
+  "event": "install.progress",
+  "data": {
+    "v": 1,
+    "id": "018f2c3a-e996-7134-ce35-b7f608192a31",
+    "serverId": "b6f7f0d2-4c1a-4a2e-9b83-2f6e4b8a91c5",
+    "line": "Update state (0x61) downloading, progress: 68.02 (9157 MiB / 13462 MiB)"
+  }
+}

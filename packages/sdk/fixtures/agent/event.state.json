@@ -1,0 +1,10 @@
+{
+  "event": "state",
+  "data": {
+    "v": 1,
+    "id": "018f2c3a-d885-7023-bd24-a6e5f7081920",
+    "serverId": "b6f7f0d2-4c1a-4a2e-9b83-2f6e4b8a91c5",
+    "state": "crashed",
+    "exitCode": 139
+  }
+}

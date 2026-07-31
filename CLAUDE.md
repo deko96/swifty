@@ -62,8 +62,8 @@ push. Never bypass them with `--no-verify`; fix the failure instead.
   the way a Nest module splits controller/schemas/service; `supervisor` splits
   naming/users/sandbox/install/runner), and shared literals are named
   constants (`unitPrefix`, `userPrefix` in `supervisor/naming.go`,
-  `PowerAction` values in `api/servers_schemas.go`, config defaults in
-  `config`). Raw `'start'`-style literals are a review blocker in Go too.
+  `PowerAction` values and the wire protocol in `agent/protocol.go`, config
+  defaults in `config`). Raw `'start'`-style literals are a review blocker in Go too.
   Literals that belong to an external protocol (systemd directive names,
   `useradd` flags) stay inline at their single point of use.
 - Conventional Commits, scoped by workspace: `feat(api): ...`,

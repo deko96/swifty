@@ -1,0 +1,11 @@
+{
+  "event": "result",
+  "data": {
+    "v": 1,
+    "id": "018f2c3a-faa7-7245-df46-c80719203b42",
+    "commandId": "018f2c3a-a552-7d10-8a91-73b2c4d5e6f7",
+    "ok": false,
+    "error": "install script exited with status 8",
+    "output": "steamcmd: Update state (0x602) error 0x602 after 12s"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "event": "hello",
+  "data": {
+    "v": 1,
+    "id": "018f2c3a-c774-7f12-ac13-95d4e6f70819",
+    "protocol": 1,
+    "daemonVersion": "0.9.4",
+    "inventory": {
+      "hostname": "rs-beg-02",
+      "os": "linux",
+      "arch": "amd64",
+      "cpuModel": "AMD Ryzen 7 5800X 8-Core Processor",
+      "cpuCores": 16,
+      "memoryMiB": 65536,
+      "diskMiB": 1907200
+    },
+    "ports": [
+      { "protocol": "udp", "port": 27015, "open": true },
+      { "protocol": "udp", "port": 7777, "open": true },
+      { "protocol": "tcp", "port": 2022, "open": false }
+    ]
+  }
+}
