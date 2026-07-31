@@ -6,19 +6,30 @@ in `daemon/`. Design decisions live in ARCHITECTURE.md.
 
 ## Commands
 
-- `bun run check` — full quality gate (lint, typecheck, tests, builds, Go
+All commands go through the root `justfile` — it is the single command
+surface for local work, git hooks, and CI. `just` (no args) lists recipes.
+Verbs take an optional target — `just <verb> [api|web|sdk|templates|daemon|panel]`
+— where no target means everything and `panel` means all TypeScript
+workspaces (e.g. `just test daemon`, `just lint api`).
+
+- `just check` — full quality gate (lint, typecheck, tests, builds, Go
   daemon checks); must pass before any work is considered done
-- `bun run lint` / `lint:fix` — Biome
-- `bun run typecheck` — tsc across all workspaces
-- `bun run test` — bun tests + template validation. Integration suites
-  (`*.integration.spec.ts`, declared with `describeDb`) run against
-  `DATABASE_URL`/`TEST_DATABASE_URL` inside always-rolled-back transactions
-  via `src/testing/harness.ts`, and are skipped when neither is set; CI
-  always runs them. Service-layer DB logic belongs in these, not in mocks.
-- Daemon only: `cd daemon && gofmt -l . && go vet ./... && go test ./...`
-- Database (from `apps/api`, needs `DATABASE_URL`): `bun run db:generate`
-  after schema changes, `bun run db:migrate`. First admin is created via the
-  setup wizard (`/api/v1/setup`), never seeded.
+- `just lint` / `just fix` — Biome for TypeScript; for the daemon, lint is
+  gofmt check + go vet and fix is gofmt
+- `just typecheck` — tsc across all workspaces (go vet for the daemon)
+- `just test` — bun tests + template validation, go test for the daemon.
+  Integration suites (`*.integration.spec.ts`, declared with `describeDb`)
+  run against `DATABASE_URL`/`TEST_DATABASE_URL` inside always-rolled-back
+  transactions via `src/testing/harness.ts`, and are skipped when neither is
+  set; CI always runs them. Service-layer DB logic belongs in these, not in
+  mocks.
+- `just dev` — all dev servers; `just dev api` / `just dev web` for one
+- `just build` — build everything; `just build daemon` produces
+  `daemon/bin/swiftyd`
+- Database (needs `DATABASE_URL`): `just generate` after schema changes,
+  `just migrate`. First admin is created via the setup wizard
+  (`/api/v1/setup`), never seeded.
+- `just up` / `just down` — dev Postgres + Redis via compose.dev.yml
 
 ## API conventions
 
@@ -38,7 +49,7 @@ in `daemon/`. Design decisions live in ARCHITECTURE.md.
   filter; add new codes to the SDK, they are part of the API contract.
 
 Git hooks (lefthook, installed by `bun install`): Biome on staged files at
-commit, Conventional Commit validation on the message, `bun run check` on
+commit, Conventional Commit validation on the message, `just check` on
 push. Never bypass them with `--no-verify`; fix the failure instead.
 
 ## Code style

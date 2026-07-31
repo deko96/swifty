@@ -5,24 +5,28 @@ get a change from idea to merged pull request.
 
 ## Development setup
 
-Prerequisites: [Bun](https://bun.sh) ≥ 1.3 and [Go](https://go.dev) ≥ 1.24
-(only needed for daemon work).
+Prerequisites: [Bun](https://bun.sh) ≥ 1.3, [just](https://just.systems)
+(`brew install just`), and [Go](https://go.dev) ≥ 1.24 (only needed for
+daemon work).
 
 ```sh
 git clone https://github.com/deko96/swifty.git
 cd swifty
-bun install
+just install
 ```
+
+All day-to-day commands are `just` recipes — run `just` with no arguments
+to list them (`just dev`, `just dev api`, `just build`, `just migrate`, …).
 
 See the README's *Getting started* section for running each app.
 
-`bun install` also installs git hooks (via [lefthook](https://lefthook.dev)):
+`just install` also installs git hooks (via [lefthook](https://lefthook.dev)):
 staged files are linted on commit, commit messages are validated, and the
 full quality gate runs before every push. You can run the gate yourself at
 any time:
 
 ```sh
-bun run check
+just check
 ```
 
 It runs everything CI runs — lint, typecheck, tests, builds, and the Go
@@ -59,7 +63,7 @@ Scope by workspace where it helps: `api`, `web`, `sdk`,
 ### Code style
 
 - TypeScript is formatted and linted by [Biome](https://biomejs.dev) —
-  `bun run lint:fix` fixes most issues.
+  `just fix` fixes most issues.
 - Go code must be `gofmt`-clean and pass `go vet`.
 - Style is enforced in CI; there is no need to debate it in review.
 
