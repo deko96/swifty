@@ -23,6 +23,9 @@ const url = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
  */
 export const describeDb = url ? describe : describe.skip;
 
+/** The URL describeDb suites run against; undefined when they are skipped. */
+export const testDatabaseUrl = url;
+
 class Rollback extends Error {}
 
 export interface TestHarness {

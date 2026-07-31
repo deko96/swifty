@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Req, Res } from '@nestjs/common';
 import {
   ApiConflictResponse,
   ApiCreatedResponse,
@@ -19,14 +19,24 @@ import { EnvService } from '../../config/env.service';
 import { userResponseSchema } from '../auth/auth.schemas';
 import { AuthService, SESSION_TTL_MS } from '../auth/auth.service';
 import { toUserResponse } from '../users/users.serializer';
-import { type CompleteSetupBody, completeSetupSchema, setupStatusSchema } from './setup.schemas';
+import { DatabaseTestService } from './database-test.service';
+import {
+  type CompleteSetupBody,
+  completeSetupSchema,
+  databaseTestResponseSchema,
+  setupChecksResponseSchema,
+  setupStatusSchema,
+} from './setup.schemas';
 import { SetupService } from './setup.service';
+import { SetupChecksService } from './setup-checks.service';
 
 @ApiTags('Setup')
 @Controller('setup')
 export class SetupController {
   constructor(
     private readonly setupService: SetupService,
+    private readonly checksService: SetupChecksService,
+    private readonly databaseTestService: DatabaseTestService,
     private readonly authService: AuthService,
     private readonly env: EnvService,
   ) {}
@@ -42,6 +52,55 @@ export class SetupController {
   @ApiOkResponse({ description: 'Current setup state.', schema: apiSchema(setupStatusSchema) })
   async status() {
     return { required: await this.setupService.isRequired() };
+  }
+
+  @Public()
+  @Get('checks')
+  @ApiOperation({
+    summary: 'Check the host environment',
+    description:
+      'Probes the machine the panel runs on for the requirements the setup wizard cares ' +
+      'about: a writable temp directory, outbound HTTPS access, the ability to open ' +
+      'listening sockets, and enough memory and disk. Each check reports pass or fail with ' +
+      'a plain-language detail line. Only available until setup is completed.',
+  })
+  @ApiOkResponse({
+    description: 'One result per requirement.',
+    schema: apiSchema(setupChecksResponseSchema),
+  })
+  @ApiConflictResponse({
+    description: 'Setup has already been completed.',
+    schema: apiSchema(errorResponseSchema),
+  })
+  async checks() {
+    await this.setupService.ensurePending();
+    return this.checksService.run();
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('database-test')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Test the database connection',
+    description:
+      'Opens a fresh connection to the configured PostgreSQL database and reports what it ' +
+      'found: the server version, its encoding (the panel requires UTF8), and whether the ' +
+      'database user is allowed to create tables. Run this before completing setup so ' +
+      'migrations do not fail halfway. A failed connection is reported in the response, not ' +
+      'as an error. Only available until setup is completed.',
+  })
+  @ApiOkResponse({
+    description: 'What the connection attempt found.',
+    schema: apiSchema(databaseTestResponseSchema),
+  })
+  @ApiConflictResponse({
+    description: 'Setup has already been completed.',
+    schema: apiSchema(errorResponseSchema),
+  })
+  async databaseTest() {
+    await this.setupService.ensurePending();
+    return this.databaseTestService.run();
   }
 
   @Public()

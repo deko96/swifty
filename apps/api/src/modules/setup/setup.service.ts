@@ -39,10 +39,14 @@ export class SetupService implements OnApplicationBootstrap {
     return admin === undefined;
   }
 
-  async complete(body: CompleteSetupBody): Promise<User> {
+  async ensurePending(): Promise<void> {
     if (!(await this.isRequired())) {
       throw new AppException(409, 'setup.already_completed', 'Setup has already been completed');
     }
+  }
+
+  async complete(body: CompleteSetupBody): Promise<User> {
+    await this.ensurePending();
 
     const codeHash = await this.settings.get<string>(SETUP_CODE_HASH_KEY);
     if (!codeHash) {

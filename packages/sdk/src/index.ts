@@ -24,8 +24,10 @@ export {
   PowerAction,
   SERVER_POWER_STATE_VALUES,
   SERVER_STATUS_VALUES,
+  SETUP_CHECK_VALUES,
   ServerPowerState,
   ServerStatus,
+  SetupCheck,
   USER_ROLE_VALUES,
   UserRole,
 } from './enums';
