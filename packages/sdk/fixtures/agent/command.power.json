@@ -1,0 +1,20 @@
+{
+  "event": "power",
+  "data": {
+    "v": 1,
+    "id": "018f2c3a-9d41-7c22-b7e4-52a09a1de3fd",
+    "serverId": "b6f7f0d2-4c1a-4a2e-9b83-2f6e4b8a91c5",
+    "action": "start",
+    "command": ["./cs2", "-dedicated", "-port", "27015"],
+    "env": {
+      "MAX_PLAYERS": "20",
+      "TICKRATE": "128"
+    },
+    "limits": {
+      "cpuPercent": 200,
+      "memoryMiB": 4096,
+      "diskMiB": 40960,
+      "pids": 256
+    }
+  }
+}

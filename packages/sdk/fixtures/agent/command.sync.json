@@ -1,0 +1,19 @@
+{
+  "event": "sync",
+  "data": {
+    "v": 1,
+    "id": "018f2c3a-b663-7e01-9b02-84c3d5e6f708",
+    "servers": [
+      {
+        "serverId": "b6f7f0d2-4c1a-4a2e-9b83-2f6e4b8a91c5",
+        "autostart": true,
+        "suspended": false
+      },
+      {
+        "serverId": "c7a801e3-5d2b-4b3f-8c94-3a7f5c9b02d6",
+        "autostart": false,
+        "suspended": true
+      }
+    ]
+  }
+}
