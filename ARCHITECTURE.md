@@ -131,15 +131,23 @@ weaker default isolation, which the tiered hardening above addresses.
 
 ### 3.3 Panel ⇄ daemon protocol
 
-- Daemon exposes a **REST API + WebSocket**, authenticated by per-node
-  tokens; use **mTLS or panel-issued short-lived JWTs** for defense in
-  depth. The panel is the only client.
+- Control plane: the **daemon dials the panel** with a persistent outbound
+  WebSocket (`wss://<panel>/agent`), authenticated by the per-node token.
+  Nodes need **outbound 443 only** — inbound ports are for players and
+  SFTP. Commands (power, install, sync) flow down; events (state changes,
+  console lines, stats, install progress, crashes) flow up. This direction
+  makes node joins a one-line `curl | sh` and works behind NAT.
+- The daemon also keeps a local **REST API** (per-node token auth) for
+  operations that don't fit a message stream; the panel is its only
+  client.
 - The panel is the **source of truth**; the daemon holds a small local
   state file (SQLite or JSON) so it can supervise through panel outages and
   reconcile on reconnect.
-- Browser console/file streams connect to the daemon **directly** (signed,
-  short-lived JWT minted by the panel) so gigabytes of file transfers and
-  console spam never proxy through the panel host.
+- Console and stats reach the browser via the **panel's WS gateway**,
+  fanned out from the agent channel. Bulk file transfers go browser ↔
+  daemon **directly** (signed, short-lived JWT minted by the panel, scoped
+  per server and per capability) so gigabytes of uploads never proxy
+  through the panel host.
 
 ---
 
@@ -305,13 +313,20 @@ day one — bolted-on plugin systems always leak.
 
 ## 8. MVP → feature-rich roadmap
 
-| Phase | Scope |
-|---|---|
-| **0. Skeleton** | Monorepo layout (`apps/api`, `apps/web`, `packages/sdk`, `packages/templates`, `daemon/`), CI, MIT license + trademark policy, contributing guide |
-| **1. Single-node MVP** | Panel auth + server CRUD, daemon with systemd-scoped processes, console over WS, CS 1.6 + Minecraft templates, file manager + SFTP |
-| **2. Multi-node + API** | Node registration, allocations, public REST API, schedules, backups, audit log, query/stats |
-| **3. Module system** | Extension points, module loader, first paid module (WHMCS) — dogfood the API by building it as a real module |
-| **4. Ecosystem** | Template marketplace, themes, reseller module, auto-deploy, community template program |
+The living, milestone-level build order lives in **ROADMAP.md**, derived
+from this document and the panel design (the UI contract). The phase table
+below is the coarse map; the design added scope the original table did not
+have — crash diagnostics, subusers with capability grants, the mod
+manager, and template-driven game panels.
+
+| Phase | Scope | ROADMAP.md milestones |
+|---|---|---|
+| **0. Skeleton** | Monorepo layout (`apps/api`, `apps/web`, `packages/sdk`, `packages/templates`, `daemon/`), CI, MIT license + trademark policy, contributing guide | done |
+| **1. Single-node MVP** | Panel auth + server CRUD, agent channel, console over WS, provisioning streams, telemetry, CS 1.6 + Minecraft templates, file manager + SFTP | M1–M4 |
+| **2. Multi-node + API** | Node registration, allocations, public REST API, schedules, backups, audit log, query/stats | M5 (audit log and query/stats land early, in M3) |
+| **2.5 Operations depth** | Crash handling & diagnostics, subusers & per-server permissions, mods, game-aware template panels | M6–M8 |
+| **3. Module system** | Extension points, module loader, first paid module (WHMCS) — dogfood the API by building it as a real module | foundation landed (typed event bus + loader); rest follows M8 |
+| **4. Ecosystem** | Template marketplace, themes, reseller module, auto-deploy, community template program | — |
 
 Build order matters: the **daemon's process/isolation layer first** (it's
 the risk), UI polish last. Every panel feature should land as API + UI
