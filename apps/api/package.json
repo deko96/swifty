@@ -22,6 +22,7 @@
     "@nestjs/throttler": "^6.5.0",
     "@scalar/nestjs-api-reference": "^1.2.11",
     "@swifty/sdk": "workspace:*",
+    "@swifty/templates": "workspace:*",
     "cookie-parser": "^1.4.7",
     "drizzle-orm": "^0.45.2",
     "reflect-metadata": "^0.2.2",
