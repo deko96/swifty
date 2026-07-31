@@ -2,8 +2,8 @@ import { afterAll, beforeAll, expect, it } from 'bun:test';
 import { ServerStatus, UserRole } from '@swifty/sdk';
 import { eq } from 'drizzle-orm';
 import type { Database } from '../../db/database.module';
-import { allocations, nodes, type User, users } from '../../db/schema';
-import { createTestHarness, describeDb, expectAppError } from '../../testing/harness';
+import { allocations, nodes, users } from '../../db/schema';
+import { createTestHarness, describeDb, expectAppError, mustExist } from '../../testing/harness';
 import { TemplatesService } from '../templates/templates.service';
 import { ServersService } from './servers.service';
 
@@ -29,7 +29,7 @@ describeDb('ServersService (integration)', () => {
       .insert(users)
       .values({ email: 'owner@t.local', username: 'owner', passwordHash: 'x' })
       .returning();
-    const [node] = await db
+    const [nodeRow] = await db
       .insert(nodes)
       .values({
         name: 'n1',
@@ -39,19 +39,20 @@ describeDb('ServersService (integration)', () => {
         diskMb: 102400,
       })
       .returning();
+    const node = mustExist(nodeRow);
     const created = await db
       .insert(allocations)
       .values([
-        { nodeId: node!.id, ip: '10.0.0.1', port: 27015 },
-        { nodeId: node!.id, ip: '10.0.0.1', port: 27016 },
+        { nodeId: node.id, ip: '10.0.0.1', port: 27015 },
+        { nodeId: node.id, ip: '10.0.0.1', port: 27016 },
       ])
       .returning();
     return {
-      admin: admin as User,
-      owner: owner as User,
-      node: node!,
-      allocation: created[0]!,
-      spare: created[1]!,
+      admin: mustExist(admin),
+      owner: mustExist(owner),
+      node,
+      allocation: mustExist(created[0]),
+      spare: mustExist(created[1]),
     };
   }
 
@@ -115,7 +116,7 @@ describeDb('ServersService (integration)', () => {
         .values({ name: 'n2', fqdn: 'n2.local', tokenEncrypted: 'x', memoryMb: 1, diskMb: 1 })
         .returning();
       await expectAppError(
-        servers.create({ ...body(f), nodeId: otherNode!.id, allocationId: f.spare.id }),
+        servers.create({ ...body(f), nodeId: mustExist(otherNode).id, allocationId: f.spare.id }),
         'allocations.not_available',
       );
     }));

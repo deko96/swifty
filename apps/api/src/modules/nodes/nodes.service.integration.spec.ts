@@ -3,7 +3,7 @@ import { TOKEN_PREFIX } from '../../common/crypto';
 import type { EnvService } from '../../config/env.service';
 import type { Database } from '../../db/database.module';
 import { allocations, servers, users } from '../../db/schema';
-import { createTestHarness, describeDb, expectAppError } from '../../testing/harness';
+import { createTestHarness, describeDb, expectAppError, mustExist } from '../../testing/harness';
 import { NodesService } from './nodes.service';
 
 describeDb('NodesService (integration)', () => {
@@ -100,7 +100,7 @@ describeDb('NodesService (integration)', () => {
         .insert(servers)
         .values({
           name: 'cs',
-          ownerId: owner!.id,
+          ownerId: mustExist(owner).id,
           nodeId: node.id,
           templateId: 'counter-strike-16',
           cpuPercent: 100,
@@ -109,8 +109,8 @@ describeDb('NodesService (integration)', () => {
           sftpUsername: 'srv_test_fixture',
         })
         .returning();
-      const used = list[0]!;
-      await db.update(allocations).set({ serverId: server!.id });
+      const used = mustExist(list[0]);
+      await db.update(allocations).set({ serverId: mustExist(server).id });
 
       await expectAppError(nodes.deleteAllocation(node.id, used.id), 'allocations.in_use');
       await expectAppError(nodes.delete(node.id), 'nodes.has_servers');
