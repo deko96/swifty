@@ -42,3 +42,75 @@ body {
   color: #dc2626;
   font-weight: 600;
 }
+
+.wizard {
+  width: min(26rem, 90vw);
+  padding: 2rem 0;
+}
+
+.wizard h1 {
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+}
+
+.wizard > p {
+  margin: 0.5rem 0 1.5rem;
+  opacity: 0.8;
+}
+
+.wizard fieldset {
+  border: none;
+  display: grid;
+  gap: 1rem;
+}
+
+.wizard label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.wizard input {
+  padding: 0.55rem 0.7rem;
+  font: inherit;
+  font-weight: 400;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+}
+
+.wizard small {
+  font-weight: 400;
+  opacity: 0.65;
+}
+
+.wizard button {
+  padding: 0.65rem;
+  font: inherit;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  background: #7c3aed;
+  color: #fff;
+  cursor: pointer;
+}
+
+.wizard button:hover {
+  background: #6d28d9;
+}
+
+.wizard fieldset:disabled button {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.errors {
+  margin: 0;
+  padding: 0.75rem 1rem 0.75rem 2rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, #dc2626 12%, transparent);
+  color: #dc2626;
+  font-size: 0.85rem;
+}

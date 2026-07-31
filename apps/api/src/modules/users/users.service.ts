@@ -1,4 +1,10 @@
-import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { DATABASE, type Database } from '../../db/database.module';
 import { type User, users } from '../../db/schema';
@@ -54,9 +60,17 @@ export class UsersService {
   }
 
   async delete(id: string): Promise<void> {
-    const deleted = await this.db.delete(users).where(eq(users.id, id)).returning({ id: users.id });
-    if (deleted.length === 0) {
-      throw new NotFoundException('User not found');
+    const user = await this.findById(id);
+    if (user.role === 'admin') {
+      const admins = await this.db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.role, 'admin'))
+        .limit(2);
+      if (admins.length < 2) {
+        throw new BadRequestException('Cannot delete the last admin account');
+      }
     }
+    await this.db.delete(users).where(eq(users.id, id));
   }
 }

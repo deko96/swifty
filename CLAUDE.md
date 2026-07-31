@@ -13,7 +13,8 @@ in `daemon/`. Design decisions live in ARCHITECTURE.md.
 - `bun run test` — bun tests + template validation
 - Daemon only: `cd daemon && gofmt -l . && go vet ./... && go test ./...`
 - Database (from `apps/api`, needs `DATABASE_URL`): `bun run db:generate`
-  after schema changes, `bun run db:migrate`, `bun run db:seed`
+  after schema changes, `bun run db:migrate`. First admin is created via the
+  setup wizard (`/api/v1/setup`), never seeded.
 
 ## API conventions
 

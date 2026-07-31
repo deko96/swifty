@@ -11,8 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "bun src/db/migrate.ts",
-    "db:seed": "bun src/db/seed.ts"
+    "db:migrate": "bun src/db/migrate.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",

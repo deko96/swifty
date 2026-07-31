@@ -1,38 +1,56 @@
 import { useEffect, useState } from 'react';
+import { getHealth, getSetupStatus, type HealthResponse, type UserResponse } from './api';
+import { SetupWizard } from './setup-wizard';
 
-interface HealthResponse {
-  status: string;
-  uptimeSeconds: number;
-  panelApiVersion: string;
-}
+type Phase = 'loading' | 'setup' | 'ready' | 'unreachable';
 
 export function App() {
+  const [phase, setPhase] = useState<Phase>('loading');
+  const [admin, setAdmin] = useState<UserResponse | null>(null);
   const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [error, setError] = useState(false);
 
   useEffect(() => {
-    fetch('/api/v1/health')
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error(res.statusText))))
-      .then((data: HealthResponse) => setHealth(data))
-      .catch(() => setError(true));
+    getSetupStatus()
+      .then((status) => setPhase(status.required ? 'setup' : 'ready'))
+      .catch(() => setPhase('unreachable'));
   }, []);
+
+  useEffect(() => {
+    if (phase === 'ready') {
+      getHealth()
+        .then(setHealth)
+        .catch(() => undefined);
+    }
+  }, [phase]);
+
+  if (phase === 'setup') {
+    return (
+      <SetupWizard
+        onComplete={(user) => {
+          setAdmin(user);
+          setPhase('ready');
+        }}
+      />
+    );
+  }
 
   return (
     <main className="landing">
       <h1>Swifty</h1>
       <p>Open-source game server control panel.</p>
       <p className="status">
-        {health && (
-          <>
-            API <span className="ok">online</span> · v{health.panelApiVersion}
-          </>
-        )}
-        {error && (
+        {phase === 'loading' && 'Checking API…'}
+        {phase === 'unreachable' && (
           <>
             API <span className="down">unreachable</span>
           </>
         )}
-        {!health && !error && 'Checking API…'}
+        {phase === 'ready' && health && (
+          <>
+            API <span className="ok">online</span> · v{health.panelApiVersion}
+          </>
+        )}
+        {phase === 'ready' && admin && <> · signed in as {admin.username}</>}
       </p>
     </main>
   );

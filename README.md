@@ -45,7 +45,6 @@ docker compose -f compose.dev.yml up -d
 # Panel API (http://localhost:3000/api/v1/health)
 cp apps/api/.env.example apps/api/.env
 bun run --filter @swifty/api db:migrate
-bun run --filter @swifty/api db:seed     # creates the first admin account
 bun run --filter @swifty/api dev
 
 # Web UI (http://localhost:5173, proxies /api to the panel API)
@@ -54,6 +53,11 @@ bun run --filter @swifty/web dev
 # Node daemon
 cd daemon && go build -o bin/swiftyd ./cmd/swiftyd
 ```
+
+On first start the panel is unconfigured: open the web UI and the **setup
+wizard** walks you through naming the panel and creating the first admin
+account. It asks for the one-time setup code printed in the API console, so
+only the person who installed the panel can claim it.
 
 With the API running, the interactive API reference lives at
 [http://localhost:3000/api/docs](http://localhost:3000/api/docs) (raw OpenAPI

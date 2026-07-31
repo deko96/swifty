@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 
-export type TokenPrefix = 'ses' | 'sk';
+export type TokenPrefix = 'ses' | 'sk' | 'setup';
 
 export function generateToken(prefix: TokenPrefix): string {
   return `${prefix}_${randomBytes(32).toString('base64url')}`;

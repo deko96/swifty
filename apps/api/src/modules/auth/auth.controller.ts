@@ -11,6 +11,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { apiSchema } from '../../common/openapi';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
+import { setSessionCookie } from '../../common/session-cookie';
 import { type AuthenticatedRequest, SESSION_COOKIE } from '../../common/types';
 import { EnvService } from '../../config/env.service';
 import type { User } from '../../db/schema';
@@ -50,12 +51,9 @@ export class AuthController {
       userAgent: request.headers['user-agent'],
     });
 
-    response.cookie(SESSION_COOKIE, token, {
-      httpOnly: true,
-      sameSite: 'lax',
+    setSessionCookie(response, token, {
       secure: this.env.nodeEnv === 'production',
       maxAge: SESSION_TTL_MS,
-      path: '/',
     });
 
     return toUserResponse(user);

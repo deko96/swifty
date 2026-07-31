@@ -24,7 +24,10 @@ export class AuthService {
     if (!user || !(await Bun.password.verify(password, user.passwordHash))) {
       throw new UnauthorizedException('Invalid email or password');
     }
+    return { user, token: await this.createSession(user, meta) };
+  }
 
+  async createSession(user: User, meta: SessionMeta): Promise<string> {
     const token = generateToken('ses');
     await this.db.insert(sessions).values({
       tokenHash: hashToken(token),
@@ -33,8 +36,7 @@ export class AuthService {
       userAgent: meta.userAgent,
       expiresAt: new Date(Date.now() + SESSION_TTL_MS),
     });
-
-    return { user, token };
+    return token;
   }
 
   async logout(token: string): Promise<void> {
