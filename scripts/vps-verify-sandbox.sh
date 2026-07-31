@@ -96,6 +96,26 @@ check() {
 }
 
 # ----------------------------------------------------------------------------
+# http helpers — minimal VPS images ship wget but not curl (or vice versa)
+# ----------------------------------------------------------------------------
+http_get() { # http_get URL [HEADER]
+  if command -v curl >/dev/null; then
+    curl -fsS ${2:+-H "$2"} "$1"
+  else
+    wget -qO- ${2:+--header="$2"} "$1"
+  fi
+}
+
+http_code() { # http_code URL -> status code on stdout
+  if command -v curl >/dev/null; then
+    curl -s -o /dev/null -w '%{http_code}' "$1"
+  else
+    wget -SqO /dev/null "$1" 2>&1 | awk '/^  HTTP\//{code=$2} END{print code+0}'
+  fi
+}
+export -f http_get http_code
+
+# ----------------------------------------------------------------------------
 # deploy mode — cross-compile here, ship to the VPS, run verify there
 # ----------------------------------------------------------------------------
 deploy() {
@@ -142,6 +162,7 @@ preflight() {
   check "systemd-run present"     command -v systemd-run
   check "systemctl present"       command -v systemctl
   check "useradd present"         command -v useradd
+  check "curl or wget present"    bash -c 'command -v curl || command -v wget'
 
   if [[ -d /sys/fs/cgroup/system.slice && -f /sys/fs/cgroup/cgroup.controllers ]]; then
     pass "cgroup v2 unified hierarchy"
@@ -238,7 +259,7 @@ JSON
 
   local up=""
   for _ in $(seq 1 20); do
-    if curl -fsS "http://127.0.0.1:${DAEMON_PORT}/healthz" >/dev/null 2>&1; then up=1; break; fi
+    if http_get "http://127.0.0.1:${DAEMON_PORT}/healthz" >/dev/null 2>&1; then up=1; break; fi
     sleep 0.25
   done
   if [[ -n "$up" ]]; then pass "daemon answers /healthz"; else
@@ -246,9 +267,9 @@ JSON
   fi
 
   check "/v1/system rejects a missing token" \
-    bash -c "[[ \$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:${DAEMON_PORT}/v1/system) == 401 ]]"
+    bash -c "[[ \$(http_code http://127.0.0.1:${DAEMON_PORT}/v1/system) == 401 ]]"
   check "/v1/system accepts the panel token" \
-    bash -c "curl -fsS -H 'Authorization: Bearer ${DAEMON_TOKEN}' http://127.0.0.1:${DAEMON_PORT}/v1/system | grep -q version"
+    bash -c "http_get http://127.0.0.1:${DAEMON_PORT}/v1/system 'Authorization: Bearer ${DAEMON_TOKEN}' | grep -q version"
 }
 
 # ----------------------------------------------------------------------------
@@ -258,6 +279,10 @@ panel_handshake() {
   section "Phase 4 — panel handshake (register a node via the API)"
   if [[ -z "${PANEL_URL:-}" ]]; then
     skip "PANEL_URL unset — skipping panel integration (daemon tested standalone)"
+    return
+  fi
+  if ! command -v curl >/dev/null; then
+    skip "panel handshake needs curl (cookie jar auth) — install curl to run this phase"
     return
   fi
   local jar; jar="$(mktemp)"
@@ -401,9 +426,12 @@ others=\$(ls -d /proc/[0-9]* 2>/dev/null | wc -l)
 say "PROC_COUNT \$others"
 
 # 4. the process must see its OWN cgroup limits bound
-mmax=\$(cat /sys/fs/cgroup/memory.max 2>/dev/null || echo NA)
-cmax=\$(cat /sys/fs/cgroup/cpu.max 2>/dev/null || echo NA)
-tmax=\$(cat /sys/fs/cgroup/pids.max 2>/dev/null || echo NA)
+# ProtectControlGroups mounts the host cgroup tree read-only (no cgroup
+# namespace), so our limits live under our unit's subtree, not the root
+cg=\$(cut -d: -f3 /proc/self/cgroup)
+mmax=\$(cat "/sys/fs/cgroup\${cg}/memory.max" 2>/dev/null || echo NA)
+cmax=\$(cat "/sys/fs/cgroup\${cg}/cpu.max" 2>/dev/null || echo NA)
+tmax=\$(cat "/sys/fs/cgroup\${cg}/pids.max" 2>/dev/null || echo NA)
 say "CGROUP mem=\$mmax cpu=\$cmax pids=\$tmax"
 
 # 5. write must work in our own dir but the OS must be read-only
