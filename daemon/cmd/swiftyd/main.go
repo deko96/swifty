@@ -16,6 +16,7 @@ import (
 
 	"github.com/deko96/swifty/daemon/internal/api"
 	"github.com/deko96/swifty/daemon/internal/config"
+	"github.com/deko96/swifty/daemon/internal/supervisor"
 	"github.com/deko96/swifty/daemon/internal/version"
 )
 
@@ -49,7 +50,7 @@ func run(logger *slog.Logger, cfg *config.Config) error {
 
 	server := &http.Server{
 		Addr:              cfg.Listen,
-		Handler:           api.NewRouter(cfg.Token),
+		Handler:           api.NewRouter(cfg.Token, supervisor.NewSystemd(), cfg.DataDir),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

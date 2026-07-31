@@ -6,14 +6,15 @@
 #
 # WHY THIS IS A SCRIPT AND NOT AN E2E TEST
 # The supervisor package (EnsureUser/startArgs/sandboxProps) is unit-tested
-# against a mock runner, but nothing drives it against real systemd yet: the
-# daemon serves only /healthz and /v1/system, and neither the daemon nor the
-# panel exposes a server-start endpoint. The panel's verifySftp is an internal
-# method with no HTTP route and the daemon has no SFTP transport. So this script
-# reproduces the exact systemd-run invocation the supervisor emits and checks
-# that the kernel enforces every isolation claim. A drift guard (phase 1) parses
-# the property list straight out of systemd.go and fails if this script and the
-# Go source disagree, so "reproduces exactly" stays true as the code evolves.
+# against a mock runner and reachable over the daemon's /v1/servers endpoints,
+# but an e2e suite would still need root, systemd, and a disposable box — so
+# real-kernel enforcement is proved here instead. The panel's verifySftp is an
+# internal method with no HTTP route and the daemon has no SFTP transport yet.
+# This script reproduces the exact systemd-run invocation the supervisor emits
+# and checks that the kernel enforces every isolation claim. A drift guard
+# (phase 1) parses the property list straight out of systemd.go and fails if
+# this script and the Go source disagree, so "reproduces exactly" stays true
+# as the code evolves.
 #
 # SECRETS: the VPS address and SSH key never live in source. `deploy` reads them
 # from VPS_HOST / VPS_USER / SSH_KEY in the environment; `verify` runs entirely
