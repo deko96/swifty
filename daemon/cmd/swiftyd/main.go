@@ -17,11 +17,23 @@ import (
 	"github.com/deko96/swifty/daemon/internal/agent"
 	"github.com/deko96/swifty/daemon/internal/api"
 	"github.com/deko96/swifty/daemon/internal/config"
+	"github.com/deko96/swifty/daemon/internal/join"
 	"github.com/deko96/swifty/daemon/internal/supervisor"
 	"github.com/deko96/swifty/daemon/internal/version"
 )
 
 func main() {
+	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
+
+	if len(os.Args) > 1 && os.Args[1] == "join" {
+		if err := runJoin(os.Args[2:]); err != nil {
+			logger.Error("join failed", "error", err)
+			os.Exit(1)
+		}
+		fmt.Println("node registered — configuration written")
+		return
+	}
+
 	configPath := flag.String("config", config.DefaultPath, "path to the daemon configuration file")
 	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
@@ -30,8 +42,6 @@ func main() {
 		fmt.Println(version.String())
 		return
 	}
-
-	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
 
 	cfg, err := config.Load(*configPath)
 	if err != nil {
@@ -43,6 +53,23 @@ func main() {
 		logger.Error("daemon exited with error", "error", err)
 		os.Exit(1)
 	}
+}
+
+func runJoin(args []string) error {
+	flags := flag.NewFlagSet("join", flag.ExitOnError)
+	panelURL := flags.String("panel", "", "panel base URL, e.g. https://panel.example.com")
+	token := flags.String("token", "", "one-time join token issued by the panel")
+	configPath := flags.String("config", config.DefaultPath, "where to write the daemon configuration")
+	insecureTLS := flags.Bool("insecure-tls", false, "accept the panel's self-signed certificate")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	return join.Run(join.Options{
+		PanelURL:    *panelURL,
+		Token:       *token,
+		ConfigPath:  *configPath,
+		InsecureTLS: *insecureTLS,
+	})
 }
 
 func run(logger *slog.Logger, cfg *config.Config) error {
