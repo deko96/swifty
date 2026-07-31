@@ -26,7 +26,7 @@ func get(t *testing.T, url, bearer string) *http.Response {
 }
 
 func TestHealthzIsPublic(t *testing.T) {
-	server := httptest.NewServer(NewRouter(testToken))
+	server := httptest.NewServer(NewRouter(testToken, &fakeManager{}, testDataDir))
 	defer server.Close()
 
 	resp := get(t, server.URL+"/healthz", "")
@@ -46,7 +46,7 @@ func TestHealthzIsPublic(t *testing.T) {
 }
 
 func TestSystemRequiresToken(t *testing.T) {
-	server := httptest.NewServer(NewRouter(testToken))
+	server := httptest.NewServer(NewRouter(testToken, &fakeManager{}, testDataDir))
 	defer server.Close()
 
 	for _, bearer := range []string{"", "node_wrong"} {
@@ -59,7 +59,7 @@ func TestSystemRequiresToken(t *testing.T) {
 }
 
 func TestSystemWithToken(t *testing.T) {
-	server := httptest.NewServer(NewRouter(testToken))
+	server := httptest.NewServer(NewRouter(testToken, &fakeManager{}, testDataDir))
 	defer server.Close()
 
 	resp := get(t, server.URL+"/v1/system", testToken)
