@@ -12,6 +12,7 @@ export function toServerResponse({ server, allocation }: ServerWithAllocation) {
     memoryMb: server.memoryMb,
     diskMb: server.diskMb,
     env: server.env,
+    sftpUsername: server.sftpUsername,
     allocation: allocation ? { id: allocation.id, ip: allocation.ip, port: allocation.port } : null,
     createdAt: server.createdAt.toISOString(),
   };

@@ -28,6 +28,18 @@ export const updateServerSchema = z.object(serverFields).partial();
 
 export type UpdateServerBody = z.infer<typeof updateServerSchema>;
 
+export const sftpInfoResponseSchema = z.object({
+  host: z.string().describe('Hostname to connect the SFTP client to'),
+  port: z.int().describe('SFTP port on the node'),
+  username: z.string().describe('SFTP login name for this server'),
+});
+
+export const sftpCredentialsResponseSchema = sftpInfoResponseSchema.extend({
+  password: z
+    .string()
+    .describe('Newly generated SFTP password; shown once and never retrievable again'),
+});
+
 export const serverResponseSchema = z.object({
   id: z.uuid(),
   name: z.string(),
@@ -41,6 +53,7 @@ export const serverResponseSchema = z.object({
   memoryMb: z.int(),
   diskMb: z.int(),
   env: z.record(z.string(), z.string()),
+  sftpUsername: z.string().describe('SFTP login name; set a password with the rotate endpoint'),
   allocation: z
     .object({ id: z.uuid(), ip: z.string(), port: z.int() })
     .nullable()
