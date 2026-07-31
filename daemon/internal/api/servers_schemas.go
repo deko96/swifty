@@ -5,17 +5,8 @@ import (
 	"net/http"
 	"regexp"
 
+	"github.com/deko96/swifty/daemon/internal/agent"
 	"github.com/deko96/swifty/daemon/internal/supervisor"
-)
-
-// PowerAction is the panel-facing vocabulary of POST /v1/servers/{id}/power.
-type PowerAction string
-
-const (
-	PowerStart   PowerAction = "start"
-	PowerRestart PowerAction = "restart"
-	PowerStop    PowerAction = "stop"
-	PowerKill    PowerAction = "kill"
 )
 
 // Server IDs become unit names and filesystem paths, so only canonical
@@ -37,7 +28,7 @@ type createServerBody struct {
 }
 
 type powerBody struct {
-	Action  PowerAction       `json:"action"`
+	Action  agent.PowerAction `json:"action"`
 	Command []string          `json:"command"`
 	Env     map[string]string `json:"env"`
 	Limits  limitsBody        `json:"limits"`
