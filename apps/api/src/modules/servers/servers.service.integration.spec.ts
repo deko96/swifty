@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, expect, it } from 'bun:test';
+import { ServerStatus, UserRole } from '@swifty/sdk';
 import { eq } from 'drizzle-orm';
 import type { Database } from '../../db/database.module';
 import { allocations, nodes, type User, users } from '../../db/schema';
@@ -17,7 +18,12 @@ describeDb('ServersService (integration)', () => {
   async function fixtures(db: Database) {
     const [admin] = await db
       .insert(users)
-      .values({ email: 'admin@t.local', username: 'admin', passwordHash: 'x', role: 'admin' })
+      .values({
+        email: 'admin@t.local',
+        username: 'admin',
+        passwordHash: 'x',
+        role: UserRole.Admin,
+      })
       .returning();
     const [owner] = await db
       .insert(users)
@@ -66,7 +72,7 @@ describeDb('ServersService (integration)', () => {
       const f = await fixtures(db);
       const { server, allocation } = await service(db).create(body(f));
 
-      expect(server.status).toBe('installing');
+      expect(server.status).toBe(ServerStatus.Installing);
       expect(server.env.MAX_PLAYERS).toBe('32');
       expect(server.env.DEFAULT_MAP).toBe('de_dust2');
       expect(allocation?.id).toBe(f.allocation.id);
@@ -122,9 +128,11 @@ describeDb('ServersService (integration)', () => {
 
       expect((await servers.listFor(f.admin)).map((s) => s.server.id)).toEqual([server.id]);
       expect((await servers.listFor(f.owner)).map((s) => s.server.id)).toEqual([server.id]);
-      expect(await servers.listFor({ ...f.admin, id: f.owner.id, role: 'user' })).toHaveLength(1);
+      expect(
+        await servers.listFor({ ...f.admin, id: f.owner.id, role: UserRole.User }),
+      ).toHaveLength(1);
 
-      const stranger = { ...f.owner, id: f.admin.id, role: 'user' as const };
+      const stranger = { ...f.owner, id: f.admin.id, role: UserRole.User };
       await expectAppError(servers.findFor(stranger, server.id), 'servers.not_found');
       expect((await servers.findFor(f.admin, server.id)).server.id).toBe(server.id);
     }));

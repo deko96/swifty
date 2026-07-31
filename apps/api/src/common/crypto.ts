@@ -1,9 +1,20 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
 
-export type TokenPrefix = 'ses' | 'sk' | 'setup' | 'node';
+export const TOKEN_PREFIX = {
+  Session: 'ses',
+  ApiKey: 'sk',
+  Setup: 'setup',
+  Node: 'node',
+} as const;
+
+export type TokenPrefix = (typeof TOKEN_PREFIX)[keyof typeof TOKEN_PREFIX];
 
 export function generateToken(prefix: TokenPrefix): string {
   return `${prefix}_${randomBytes(32).toString('base64url')}`;
+}
+
+export function hasTokenPrefix(token: string, prefix: TokenPrefix): boolean {
+  return token.startsWith(`${prefix}_`);
 }
 
 export function hashToken(token: string): string {

@@ -1,14 +1,15 @@
 import { Inject, Injectable, Logger, type OnApplicationBootstrap } from '@nestjs/common';
+import { UserRole } from '@swifty/sdk';
 import { eq } from 'drizzle-orm';
 import { AppException } from '../../common/app.exception';
-import { generateToken, hashToken } from '../../common/crypto';
+import { generateToken, hashToken, TOKEN_PREFIX } from '../../common/crypto';
 import { DATABASE, type Database } from '../../db/database.module';
 import { type User, users } from '../../db/schema';
 import { SettingsService } from '../settings/settings.service';
 import type { CompleteSetupBody } from './setup.schemas';
 
 export const PANEL_NAME_KEY = 'panel.name';
-const SETUP_CODE_HASH_KEY = 'setup.code_hash';
+export const SETUP_CODE_HASH_KEY = 'setup.code_hash';
 
 @Injectable()
 export class SetupService implements OnApplicationBootstrap {
@@ -23,7 +24,7 @@ export class SetupService implements OnApplicationBootstrap {
     if (!(await this.isRequired())) {
       return;
     }
-    const code = generateToken('setup');
+    const code = generateToken(TOKEN_PREFIX.Setup);
     await this.settings.set(SETUP_CODE_HASH_KEY, hashToken(code));
     this.logger.warn('Panel is not set up yet — open it in your browser to run the setup wizard.');
     this.logger.warn(`One-time setup code: ${code}`);
@@ -33,7 +34,7 @@ export class SetupService implements OnApplicationBootstrap {
     const [admin] = await this.db
       .select({ id: users.id })
       .from(users)
-      .where(eq(users.role, 'admin'))
+      .where(eq(users.role, UserRole.Admin))
       .limit(1);
     return admin === undefined;
   }
@@ -67,7 +68,7 @@ export class SetupService implements OnApplicationBootstrap {
         email: body.admin.email,
         username: body.admin.username,
         passwordHash: await Bun.password.hash(body.admin.password, 'argon2id'),
-        role: 'admin',
+        role: UserRole.Admin,
       })
       .returning();
     if (!admin) {

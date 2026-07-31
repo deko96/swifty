@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { and, eq } from 'drizzle-orm';
 import { AppException } from '../../common/app.exception';
-import { decryptSecret, encryptSecret, generateToken } from '../../common/crypto';
+import { decryptSecret, encryptSecret, generateToken, TOKEN_PREFIX } from '../../common/crypto';
 import { EnvService } from '../../config/env.service';
 import { DATABASE, type Database } from '../../db/database.module';
 import { allocations, type Node, nodes, servers } from '../../db/schema';
@@ -41,7 +41,7 @@ export class NodesService {
       throw new AppException(409, 'nodes.name_taken', 'A node with this name already exists');
     }
 
-    const token = generateToken('node');
+    const token = generateToken(TOKEN_PREFIX.Node);
     const [node] = await this.db
       .insert(nodes)
       .values({ ...body, tokenEncrypted: encryptSecret(token, this.env.appSecret) })
@@ -94,7 +94,7 @@ export class NodesService {
 
   async rotateToken(id: string): Promise<Node> {
     await this.findById(id);
-    const token = generateToken('node');
+    const token = generateToken(TOKEN_PREFIX.Node);
     const [node] = await this.db
       .update(nodes)
       .set({ tokenEncrypted: encryptSecret(token, this.env.appSecret), updatedAt: new Date() })

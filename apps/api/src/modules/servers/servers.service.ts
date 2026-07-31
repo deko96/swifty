@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { UserRole } from '@swifty/sdk';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { AppException } from '../../common/app.exception';
 import { DATABASE, type Database } from '../../db/database.module';
@@ -29,7 +30,7 @@ export class ServersService {
 
   async listFor(user: User): Promise<ServerWithAllocation[]> {
     const rows =
-      user.role === 'admin'
+      user.role === UserRole.Admin
         ? await this.db.select().from(servers).orderBy(servers.createdAt)
         : await this.db
             .select()
@@ -41,7 +42,7 @@ export class ServersService {
 
   async findFor(user: User, id: string): Promise<ServerWithAllocation> {
     const [server] = await this.db.select().from(servers).where(eq(servers.id, id)).limit(1);
-    if (!server || (user.role !== 'admin' && server.ownerId !== user.id)) {
+    if (!server || (user.role !== UserRole.Admin && server.ownerId !== user.id)) {
       throw new AppException(404, 'servers.not_found', 'Server not found');
     }
     const [withAllocation] = await this.withPrimaryAllocations([server]);

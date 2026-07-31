@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { AppException } from '../../common/app.exception';
-import { generateToken, hashToken } from '../../common/crypto';
+import { generateToken, hashToken, TOKEN_PREFIX } from '../../common/crypto';
 import { DATABASE, type Database } from '../../db/database.module';
 import { sessions, type User, users } from '../../db/schema';
 
@@ -29,7 +29,7 @@ export class AuthService {
   }
 
   async createSession(user: User, meta: SessionMeta): Promise<string> {
-    const token = generateToken('ses');
+    const token = generateToken(TOKEN_PREFIX.Session);
     await this.db.insert(sessions).values({
       tokenHash: hashToken(token),
       userId: user.id,

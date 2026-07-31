@@ -5,6 +5,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { apiReference } from '@scalar/nestjs-api-reference';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+import { TOKEN_PREFIX } from './common/crypto';
+import { SESSION_COOKIE } from './common/types';
 import { EnvService } from './config/env.service';
 
 async function bootstrap(): Promise<void> {
@@ -22,7 +24,7 @@ async function bootstrap(): Promise<void> {
         'accounts, game servers, and the machines they run on.\n\n' +
         '**Getting access.** Sign in with `POST /api/v1/auth/login`; the session cookie it ' +
         'sets authenticates later requests. For scripts and integrations, use an API key ' +
-        'instead: send it as `Authorization: Bearer sk_...`.\n\n' +
+        `instead: send it as \`Authorization: Bearer ${TOKEN_PREFIX.ApiKey}_...\`.\n\n` +
         '**Roles.** `admin` accounts manage the whole panel; `user` accounts only see their ' +
         'own game servers.\n\n' +
         '**Errors.** Every error response has the same shape: `{ code, message, details?, ' +
@@ -33,8 +35,12 @@ async function bootstrap(): Promise<void> {
         'in the logs.',
     )
     .setVersion('0.1.0')
-    .addCookieAuth('swifty_session')
-    .addBearerAuth({ type: 'http', scheme: 'bearer', description: 'API key (sk_...)' })
+    .addCookieAuth(SESSION_COOKIE)
+    .addBearerAuth({
+      type: 'http',
+      scheme: 'bearer',
+      description: `API key (${TOKEN_PREFIX.ApiKey}_...)`,
+    })
     .build();
   const document = SwaggerModule.createDocument(app, openApiConfig);
 

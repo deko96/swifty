@@ -1,5 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
-import type { UserRole } from '../../db/schema';
+import type { UserRole } from '@swifty/sdk';
 
 export const ROLES_KEY = 'roles';
 

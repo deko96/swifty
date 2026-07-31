@@ -1,4 +1,5 @@
 import { afterAll, expect, it } from 'bun:test';
+import { UserRole } from '@swifty/sdk';
 import type { Database } from '../../db/database.module';
 import { createTestHarness, describeDb, expectAppError } from '../../testing/harness';
 import { UsersService } from './users.service';
@@ -13,7 +14,7 @@ describeDb('UsersService (integration)', () => {
     email: 'admin@test.local',
     username: 'admin',
     password: 'a-long-enough-password',
-    role: 'admin' as const,
+    role: UserRole.Admin,
   };
 
   it('creates and fetches a user with a hashed password', () =>

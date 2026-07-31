@@ -1,6 +1,6 @@
 import { type CanActivate, type ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import type { UserRole } from '../../db/schema';
+import type { UserRole } from '@swifty/sdk';
 import { AppException } from '../app.exception';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import type { AuthenticatedRequest } from '../types';

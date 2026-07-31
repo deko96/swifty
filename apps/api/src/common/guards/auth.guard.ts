@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { DATABASE, type Database } from '../../db/database.module';
 import { apiKeys, sessions, users } from '../../db/schema';
 import { AppException } from '../app.exception';
-import { hashToken } from '../crypto';
+import { hashToken, hasTokenPrefix, TOKEN_PREFIX } from '../crypto';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { type AuthenticatedRequest, SESSION_COOKIE } from '../types';
 
@@ -27,13 +27,13 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
 
     const sessionToken = request.cookies?.[SESSION_COOKIE];
-    if (typeof sessionToken === 'string' && sessionToken.startsWith('ses_')) {
+    if (typeof sessionToken === 'string' && hasTokenPrefix(sessionToken, TOKEN_PREFIX.Session)) {
       request.user = await this.userFromSession(sessionToken);
       return true;
     }
 
     const header = request.headers.authorization;
-    if (header?.startsWith('Bearer sk_')) {
+    if (header?.startsWith(`Bearer ${TOKEN_PREFIX.ApiKey}_`)) {
       request.user = await this.userFromApiKey(header.slice('Bearer '.length));
       return true;
     }

@@ -20,6 +20,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { UserRole } from '@swifty/sdk';
 import { z } from 'zod';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { errorResponseSchema } from '../../common/error.schema';
@@ -47,7 +48,7 @@ import { NodesService } from './nodes.service';
   description: 'Requires the admin role.',
   schema: apiSchema(errorResponseSchema),
 })
-@Roles('admin')
+@Roles(UserRole.Admin)
 @Controller('nodes')
 export class NodesController {
   constructor(private readonly nodesService: NodesService) {}

@@ -1,3 +1,4 @@
+import { SERVER_STATUS_VALUES } from '@swifty/sdk';
 import { z } from 'zod';
 
 const envSchema = z
@@ -34,7 +35,7 @@ export const serverResponseSchema = z.object({
   nodeId: z.uuid(),
   templateId: z.string(),
   status: z
-    .enum(['installing', 'installed', 'install_failed', 'suspended'])
+    .enum(SERVER_STATUS_VALUES)
     .describe('Install lifecycle state; live run state comes from the node daemon'),
   cpuPercent: z.int(),
   memoryMb: z.int(),

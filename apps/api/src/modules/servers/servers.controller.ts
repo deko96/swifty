@@ -20,6 +20,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { UserRole } from '@swifty/sdk';
 import { z } from 'zod';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -75,7 +76,7 @@ export class ServersController {
   }
 
   @Post()
-  @Roles('admin')
+  @Roles(UserRole.Admin)
   @ApiForbiddenResponse({
     description: 'Requires the admin role.',
     schema: apiSchema(errorResponseSchema),
@@ -101,7 +102,7 @@ export class ServersController {
   }
 
   @Patch(':id')
-  @Roles('admin')
+  @Roles(UserRole.Admin)
   @ApiForbiddenResponse({
     description: 'Requires the admin role.',
     schema: apiSchema(errorResponseSchema),
@@ -125,7 +126,7 @@ export class ServersController {
   }
 
   @Delete(':id')
-  @Roles('admin')
+  @Roles(UserRole.Admin)
   @HttpCode(204)
   @ApiForbiddenResponse({
     description: 'Requires the admin role.',

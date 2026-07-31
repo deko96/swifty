@@ -1,13 +1,9 @@
+import { SERVER_STATUS_VALUES, ServerStatus } from '@swifty/sdk';
 import { integer, jsonb, pgEnum, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { nodes } from './nodes';
 import { users } from './users';
 
-export const serverStatus = pgEnum('server_status', [
-  'installing',
-  'installed',
-  'install_failed',
-  'suspended',
-]);
+export const serverStatus = pgEnum('server_status', SERVER_STATUS_VALUES);
 
 export const servers = pgTable('servers', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -19,7 +15,7 @@ export const servers = pgTable('servers', {
     .notNull()
     .references(() => nodes.id, { onDelete: 'restrict' }),
   templateId: varchar('template_id', { length: 64 }).notNull(),
-  status: serverStatus('status').notNull().default('installing'),
+  status: serverStatus('status').notNull().default(ServerStatus.Installing),
   cpuPercent: integer('cpu_percent').notNull(),
   memoryMb: integer('memory_mb').notNull(),
   diskMb: integer('disk_mb').notNull(),
