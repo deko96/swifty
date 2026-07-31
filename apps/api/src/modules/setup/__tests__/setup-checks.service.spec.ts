@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import { SETUP_CHECK_VALUES, SetupCheck } from '@swifty/sdk';
-import type { EnvService } from '../../config/env.service';
-import { SetupChecksService } from './setup-checks.service';
+import type { EnvService } from '../../../config/env.service';
+import { SetupChecksService } from '../setup-checks.service';
 
 describe('SetupChecksService', () => {
   const service = new SetupChecksService({ httpHost: '127.0.0.1' } as EnvService);

@@ -6,6 +6,7 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
@@ -23,6 +24,8 @@ import { DatabaseTestService } from './database-test.service';
 import {
   type CompleteSetupBody,
   completeSetupSchema,
+  type DatabaseSetupBody,
+  databaseSetupSchema,
   databaseTestResponseSchema,
   setupChecksResponseSchema,
   setupStatusSchema,
@@ -51,7 +54,10 @@ export class SetupController {
   })
   @ApiOkResponse({ description: 'Current setup state.', schema: apiSchema(setupStatusSchema) })
   async status() {
-    return { required: await this.setupService.isRequired() };
+    return {
+      required: await this.setupService.isRequired(),
+      databaseConfigured: this.setupService.isDatabaseConfigured(),
+    };
   }
 
   @Public()
@@ -82,25 +88,68 @@ export class SetupController {
   @Post('database-test')
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Test the database connection',
+    summary: 'Test a database connection',
     description:
-      'Opens a fresh connection to the configured PostgreSQL database and reports what it ' +
-      'found: the server version, its encoding (the panel requires UTF8), and whether the ' +
-      'database user is allowed to create tables. Run this before completing setup so ' +
-      'migrations do not fail halfway. A failed connection is reported in the response, not ' +
-      'as an error. Only available until setup is completed.',
+      'Opens a fresh connection to the PostgreSQL server described in the request and reports ' +
+      'what it found: the server version, its encoding (the panel requires UTF8), and whether ' +
+      'the database user is allowed to create tables. The wizard calls this while you fill in ' +
+      'the database step, before anything is saved. A failed connection is reported in the ' +
+      'response, not as an error. Requires the one-time setup code and is only available ' +
+      'until setup is completed.',
   })
   @ApiOkResponse({
     description: 'What the connection attempt found.',
     schema: apiSchema(databaseTestResponseSchema),
   })
+  @ApiForbiddenResponse({
+    description: 'Missing or wrong setup code.',
+    schema: apiSchema(errorResponseSchema),
+  })
   @ApiConflictResponse({
     description: 'Setup has already been completed.',
     schema: apiSchema(errorResponseSchema),
   })
-  async databaseTest() {
+  async databaseTest(@Body(new ZodValidationPipe(databaseSetupSchema)) body: DatabaseSetupBody) {
     await this.setupService.ensurePending();
-    return this.databaseTestService.run();
+    await this.setupService.verifyCode(body.setupCode);
+    return this.databaseTestService.run(body.database);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('database')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Save the database and run migrations',
+    description:
+      'Makes the PostgreSQL server described in the request the panel database. The ' +
+      'connection is tested first; if it works, the credentials are saved to the panel ' +
+      "config file (config/config.yml, readable only by the panel's user), the panel " +
+      'connects, and all pending migrations run. After this step the rest of the wizard — ' +
+      'creating the administrator — can complete. Requires the one-time setup code, works ' +
+      'only while no database is configured yet, and is only available until setup is ' +
+      'completed.',
+  })
+  @ApiOkResponse({
+    description: 'The database was saved and migrated; details of the tested connection.',
+    schema: apiSchema(databaseTestResponseSchema),
+  })
+  @ApiForbiddenResponse({
+    description: 'Missing or wrong setup code.',
+    schema: apiSchema(errorResponseSchema),
+  })
+  @ApiConflictResponse({
+    description: 'Setup has already been completed, or a database is already configured.',
+    schema: apiSchema(errorResponseSchema),
+  })
+  @ApiUnprocessableEntityResponse({
+    description: 'The database could not be reached or is not usable.',
+    schema: apiSchema(errorResponseSchema),
+  })
+  async configureDatabase(
+    @Body(new ZodValidationPipe(databaseSetupSchema)) body: DatabaseSetupBody,
+  ) {
+    return this.setupService.configureDatabase(body);
   }
 
   @Public()

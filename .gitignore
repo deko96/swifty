@@ -10,6 +10,9 @@ dist/
 .env.local
 .env.*.local
 
+# Panel config written by the setup wizard (holds database credentials)
+apps/api/config/
+
 # Test coverage
 coverage/
 

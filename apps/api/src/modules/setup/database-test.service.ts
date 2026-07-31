@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { SQL } from 'bun';
-import { EnvService } from '../../config/env.service';
+import { type DatabaseConnection, panelDatabaseUrl } from '../../config/panel-config';
 import type { DatabaseTestResponse } from './setup.schemas';
 
 export const DB_DIAL_TIMEOUT_S = 5;
@@ -9,10 +9,8 @@ const MIGRATION_SCHEMA = 'public';
 
 @Injectable()
 export class DatabaseTestService {
-  constructor(private readonly env: EnvService) {}
-
-  async run(): Promise<DatabaseTestResponse> {
-    return testConnection(this.env.databaseUrl);
+  async run(connection: DatabaseConnection): Promise<DatabaseTestResponse> {
+    return testConnection(panelDatabaseUrl(connection));
   }
 }
 

@@ -1,11 +1,18 @@
 import { SETUP_CHECK_VALUES } from '@swifty/sdk';
 import { z } from 'zod';
 import { TOKEN_PREFIX } from '../../common/crypto';
+import { databaseConnectionSchema } from '../../config/panel-config';
 
 export const setupStatusSchema = z.object({
   required: z
     .boolean()
     .describe('true while the panel has no admin account and the setup wizard must be completed'),
+  databaseConfigured: z
+    .boolean()
+    .describe(
+      'true when the panel already has a working database, from the environment or from an ' +
+        'earlier wizard run; the wizard skips its database step when set',
+    ),
 });
 
 export const setupCheckSchema = z.object({
@@ -21,6 +28,18 @@ export const setupChecksResponseSchema = z.object({
 
 export type SetupCheckResult = z.infer<typeof setupCheckSchema>;
 export type SetupChecksResponse = z.infer<typeof setupChecksResponseSchema>;
+
+export const databaseSetupSchema = z.object({
+  setupCode: z
+    .string()
+    .startsWith(`${TOKEN_PREFIX.Setup}_`)
+    .describe('One-time code printed in the panel console when it starts unconfigured'),
+  database: databaseConnectionSchema.describe(
+    'PostgreSQL connection details entered in the wizard',
+  ),
+});
+
+export type DatabaseSetupBody = z.infer<typeof databaseSetupSchema>;
 
 export const databaseTestResponseSchema = z.object({
   ok: z

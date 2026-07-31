@@ -1,6 +1,6 @@
 import { expect, it } from 'bun:test';
-import { describeDb, testDatabaseUrl } from '../../testing/harness';
-import { REQUIRED_ENCODING, testConnection } from './database-test.service';
+import { describeDb, testDatabaseUrl } from '../../../testing/harness';
+import { REQUIRED_ENCODING, testConnection } from '../database-test.service';
 
 describeDb('DatabaseTestService (integration)', () => {
   it('reports version, encoding, and create privilege for a reachable database', async () => {
