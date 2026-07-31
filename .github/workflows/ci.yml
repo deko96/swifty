@@ -28,7 +28,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -43,11 +43,13 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
-      - name: Test
-        run: bun run test
-
       - name: Migrate database
         run: bun run --filter @swifty/api db:migrate
+        env:
+          DATABASE_URL: postgres://swifty:swifty@localhost:5432/swifty
+
+      - name: Test
+        run: bun run test
         env:
           DATABASE_URL: postgres://swifty:swifty@localhost:5432/swifty
 
@@ -61,11 +63,14 @@ jobs:
       run:
         working-directory: daemon
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: daemon/go.mod
+          # No go.sum yet (stdlib-only daemon); switch to
+          # cache-dependency-path: daemon/go.sum once dependencies exist.
+          cache: false
 
       - name: Check formatting
         run: test -z "$(gofmt -l .)" || (gofmt -l . && exit 1)
