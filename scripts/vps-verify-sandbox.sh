@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # vps-verify-sandbox.sh — deploy swiftyd to a real VPS and adversarially prove
-# that the systemd sandbox in daemon/internal/supervisor/systemd.go actually
+# that the systemd sandbox in daemon/internal/supervisor/sandbox.go actually
 # isolates game servers on a live kernel.
 #
 # WHY THIS IS A SCRIPT AND NOT AN E2E TEST
@@ -12,7 +12,7 @@
 # internal method with no HTTP route and the daemon has no SFTP transport yet.
 # This script reproduces the exact systemd-run invocation the supervisor emits
 # and checks that the kernel enforces every isolation claim. A drift guard
-# (phase 1) parses the property list straight out of systemd.go and fails if
+# (phase 1) parses the property list straight out of sandbox.go and fails if
 # this script and the Go source disagree, so "reproduces exactly" stays true
 # as the code evolves.
 #
@@ -55,8 +55,8 @@ CPU_QUOTA_PCT="${CPU_QUOTA_PCT:-20}"
 PIDS_MAX="${PIDS_MAX:-64}"
 NODE_FQDN="${NODE_FQDN:-127.0.0.1}"
 DAEMON_PORT="${DAEMON_PORT:-8443}"
-UNIT_PREFIX="swifty-"          # mirrors unitPrefix in systemd.go
-USER_PREFIX="sv_"              # mirrors userPrefix in systemd.go
+UNIT_PREFIX="swifty-"          # mirrors unitPrefix in naming.go
+USER_PREFIX="sv_"              # mirrors userPrefix in naming.go
 VERIFY_TAG="vfy"               # keeps verify users/units clear of real ones
 
 # the two servers used for the cross-server isolation test
@@ -177,10 +177,10 @@ preflight() {
 }
 
 # ----------------------------------------------------------------------------
-# phase 1 — drift guard: this script vs sandboxProps() in systemd.go
+# phase 1 — drift guard: this script vs sandboxProps() in sandbox.go
 # ----------------------------------------------------------------------------
 # The names below must equal the fixed (value-independent) directives emitted by
-# sandboxProps. If systemd.go changes, this phase fails until the list is
+# sandboxProps. If sandbox.go changes, this phase fails until the list is
 # reconciled — so "reproduces the real invocation" cannot silently rot.
 SANDBOX_PROPS=(
   NoNewPrivileges PrivateTmp PrivateDevices ProtectSystem ProtectHome
@@ -189,10 +189,10 @@ SANDBOX_PROPS=(
 )
 
 drift_guard() {
-  section "Phase 1 — drift guard (script vs systemd.go)"
-  local src="${REPO_ROOT}/daemon/internal/supervisor/systemd.go"
+  section "Phase 1 — drift guard (script vs sandbox.go)"
+  local src="${REPO_ROOT}/daemon/internal/supervisor/sandbox.go"
   if [[ ! -f "$src" ]]; then
-    skip "systemd.go not present (running standalone on VPS) — skipping drift check"
+    skip "sandbox.go not present (running standalone on VPS) — skipping drift check"
     return
   fi
 
@@ -204,9 +204,9 @@ drift_guard() {
   from_script="$(printf '%s\n' "${SANDBOX_PROPS[@]}" | sort -u)"
 
   if [[ "$from_go" == "$from_script" ]]; then
-    pass "sandbox property set matches systemd.go (${#SANDBOX_PROPS[@]} directives)"
+    pass "sandbox property set matches sandbox.go (${#SANDBOX_PROPS[@]} directives)"
   else
-    fail "sandbox property set DRIFTED from systemd.go"
+    fail "sandbox property set DRIFTED from sandbox.go"
     info "only in Go:     $(comm -23 <(echo "$from_go") <(echo "$from_script") | tr '\n' ' ')"
     info "only in script: $(comm -13 <(echo "$from_go") <(echo "$from_script") | tr '\n' ' ')"
   fi

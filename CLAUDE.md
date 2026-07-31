@@ -57,5 +57,14 @@ push. Never bypass them with `--no-verify`; fix the failure instead.
 - In `apps/api`, NestJS-injected classes need value imports (never
   `import type`) for their injection tokens; Biome's `useImportType` is
   disabled there for this reason.
+- The Go daemon follows the same discipline as the NestJS side: one concern
+  per file (`daemon/internal/api` splits router/auth/respond/handlers/schemas
+  the way a Nest module splits controller/schemas/service; `supervisor` splits
+  naming/users/sandbox/install/runner), and shared literals are named
+  constants (`unitPrefix`, `userPrefix` in `supervisor/naming.go`,
+  `PowerAction` values in `api/servers_schemas.go`, config defaults in
+  `config`). Raw `'start'`-style literals are a review blocker in Go too.
+  Literals that belong to an external protocol (systemd directive names,
+  `useradd` flags) stay inline at their single point of use.
 - Conventional Commits, scoped by workspace: `feat(api): ...`,
   `fix(daemon): ...`.

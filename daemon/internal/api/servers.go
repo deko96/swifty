@@ -2,10 +2,8 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"path/filepath"
-	"regexp"
 
 	"github.com/deko96/swifty/daemon/internal/supervisor"
 )
@@ -20,11 +18,6 @@ type ServerManager interface {
 	State(ctx context.Context, id string) (supervisor.State, error)
 	RunInstall(ctx context.Context, spec supervisor.Spec, script string) ([]byte, error)
 }
-
-// Server IDs become unit names and filesystem paths, so only canonical
-// lowercase UUIDs are accepted.
-var serverIDPattern = regexp.MustCompile(
-	`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
 
 type serverHandlers struct {
 	manager ServerManager
@@ -47,47 +40,17 @@ func (h *serverHandlers) spec(id string) supervisor.Spec {
 	}
 }
 
-func pathID(w http.ResponseWriter, r *http.Request) (string, bool) {
-	id := r.PathValue("id")
-	if !serverIDPattern.MatchString(id) {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "id must be a lowercase UUID"})
-		return "", false
-	}
-	return id, true
-}
-
-func decodeBody(w http.ResponseWriter, r *http.Request, into any) bool {
-	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(into); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body: " + err.Error()})
-		return false
-	}
-	return true
-}
-
-type limitsBody struct {
-	CPUPercent int   `json:"cpuPercent"`
-	MemoryMiB  int64 `json:"memoryMiB"`
-	DiskMiB    int64 `json:"diskMiB"`
-	Pids       int   `json:"pids"`
-}
-
-type createServerBody struct {
-	ID string `json:"id"`
-}
-
 func (h *serverHandlers) create(w http.ResponseWriter, r *http.Request) {
 	var body createServerBody
 	if !decodeBody(w, r, &body) {
 		return
 	}
 	if !serverIDPattern.MatchString(body.ID) {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "id must be a lowercase UUID"})
+		writeError(w, http.StatusBadRequest, errBadServerID)
 		return
 	}
 	if err := h.manager.EnsureUser(r.Context(), h.spec(body.ID)); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	writeJSON(w, http.StatusCreated, map[string]string{"id": body.ID})
@@ -100,7 +63,7 @@ func (h *serverHandlers) get(w http.ResponseWriter, r *http.Request) {
 	}
 	state, err := h.manager.State(r.Context(), id)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"id": id, "state": string(state)})
@@ -114,17 +77,10 @@ func (h *serverHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	// the unit may not exist; removal must succeed regardless
 	_ = h.manager.Kill(r.Context(), id)
 	if err := h.manager.RemoveUser(r.Context(), h.spec(id)); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
-}
-
-type powerBody struct {
-	Action  string            `json:"action"`
-	Command []string          `json:"command"`
-	Env     map[string]string `json:"env"`
-	Limits  limitsBody        `json:"limits"`
 }
 
 func (h *serverHandlers) power(w http.ResponseWriter, r *http.Request) {
@@ -137,62 +93,42 @@ func (h *serverHandlers) power(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if body.Action == "start" || body.Action == "restart" {
+	if body.Action == PowerStart || body.Action == PowerRestart {
 		if message := validateStart(body); message != "" {
-			writeJSON(w, http.StatusBadRequest, map[string]string{"error": message})
+			writeError(w, http.StatusBadRequest, message)
 			return
 		}
 	}
 
 	var err error
 	switch body.Action {
-	case "start":
+	case PowerStart:
 		err = h.manager.Start(r.Context(), h.startSpec(id, body))
-	case "restart":
+	case PowerRestart:
 		// the unit may not be running; a fresh start must succeed regardless
 		_ = h.manager.Stop(r.Context(), id)
 		err = h.manager.Start(r.Context(), h.startSpec(id, body))
-	case "stop":
+	case PowerStop:
 		err = h.manager.Stop(r.Context(), id)
-	case "kill":
+	case PowerKill:
 		err = h.manager.Kill(r.Context(), id)
 	default:
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "action must be start, restart, stop, or kill"})
+		writeError(w, http.StatusBadRequest, "action must be start, restart, stop, or kill")
 		return
 	}
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
-}
-
-func validateStart(body powerBody) string {
-	if len(body.Command) == 0 || body.Command[0] == "" {
-		return "start requires a command"
-	}
-	if body.Limits.MemoryMiB <= 0 || body.Limits.CPUPercent <= 0 {
-		return "start requires positive memoryMiB and cpuPercent limits"
-	}
-	return ""
 }
 
 func (h *serverHandlers) startSpec(id string, body powerBody) supervisor.Spec {
 	spec := h.spec(id)
 	spec.Command = body.Command
 	spec.Env = body.Env
-	spec.Limits = supervisor.Limits{
-		CPUPercent: body.Limits.CPUPercent,
-		MemoryMiB:  body.Limits.MemoryMiB,
-		DiskMiB:    body.Limits.DiskMiB,
-		Pids:       body.Limits.Pids,
-	}
+	spec.Limits = body.limits()
 	return spec
-}
-
-type installBody struct {
-	Script string            `json:"script"`
-	Env    map[string]string `json:"env"`
 }
 
 // install runs the template's install script to completion and returns its
@@ -208,7 +144,7 @@ func (h *serverHandlers) install(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if body.Script == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "install requires a script"})
+		writeError(w, http.StatusBadRequest, "install requires a script")
 		return
 	}
 	spec := h.spec(id)
