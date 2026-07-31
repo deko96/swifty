@@ -7,6 +7,7 @@ export const envSchema = z.object({
   DATABASE_URL: z.url().startsWith('postgres'),
   REDIS_URL: z.url().startsWith('redis'),
   APP_SECRET: z.string().min(32),
+  MODULES_DIR: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

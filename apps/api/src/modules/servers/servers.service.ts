@@ -14,6 +14,7 @@ import {
   type User,
   users,
 } from '../../db/schema';
+import { EventBusService } from '../events/event-bus.service';
 import { TemplatesService } from '../templates/templates.service';
 import type { CreateServerBody, UpdateServerBody } from './servers.schemas';
 import { generateSftpPassword, sftpUsername } from './sftp';
@@ -37,6 +38,7 @@ export class ServersService {
   constructor(
     @Inject(DATABASE) private readonly db: Database,
     private readonly templates: TemplatesService,
+    private readonly events: EventBusService,
   ) {}
 
   async listFor(user: User): Promise<ServerWithAllocation[]> {
@@ -67,7 +69,7 @@ export class ServersService {
     const template = this.templates.findById(body.templateId);
     const env = this.resolveEnvOrThrow(template.id, this.stringifyEnv(body.env));
 
-    return this.db.transaction(async (tx) => {
+    const result = await this.db.transaction(async (tx) => {
       const [owner] = await tx.select().from(users).where(eq(users.id, body.ownerId)).limit(1);
       if (!owner) {
         throw new AppException(404, 'users.not_found', 'Owner not found');
@@ -124,6 +126,14 @@ export class ServersService {
 
       return { server, allocation: { ...allocation, serverId: server.id } };
     });
+
+    this.events.emit('server.created', {
+      serverId: result.server.id,
+      ownerId: result.server.ownerId,
+      nodeId: result.server.nodeId,
+      templateId: result.server.templateId,
+    });
+    return result;
   }
 
   async update(id: string, body: UpdateServerBody): Promise<ServerWithAllocation> {
@@ -218,6 +228,8 @@ export class ServersService {
         throw new AppException(404, 'servers.not_found', 'Server not found');
       }
     });
+
+    this.events.emit('server.deleted', { serverId: id });
   }
 
   private resolveEnvOrThrow(

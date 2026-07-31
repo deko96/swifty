@@ -4,11 +4,15 @@ import { eq } from 'drizzle-orm';
 import { AppException } from '../../common/app.exception';
 import { DATABASE, type Database } from '../../db/database.module';
 import { type User, users } from '../../db/schema';
+import { EventBusService } from '../events/event-bus.service';
 import type { CreateUserBody } from './users.schemas';
 
 @Injectable()
 export class UsersService {
-  constructor(@Inject(DATABASE) private readonly db: Database) {}
+  constructor(
+    @Inject(DATABASE) private readonly db: Database,
+    private readonly events: EventBusService,
+  ) {}
 
   async list(): Promise<User[]> {
     return this.db.select().from(users).orderBy(users.createdAt);
@@ -56,6 +60,7 @@ export class UsersService {
     if (!user) {
       throw new Error('Insert returned no row');
     }
+    this.events.emit('user.created', { userId: user.id });
     return user;
   }
 

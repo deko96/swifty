@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import type { Database } from '../../db/database.module';
 import { allocations, nodes, type User, users } from '../../db/schema';
 import { createTestHarness, describeDb, expectAppError } from '../../testing/harness';
+import { EventBusService } from '../events/event-bus.service';
 import { TemplatesService } from '../templates/templates.service';
 import { ServersService } from './servers.service';
 
@@ -13,7 +14,7 @@ describeDb('ServersService (integration)', () => {
   beforeAll(() => templates.onModuleInit());
   afterAll(() => harness.close());
 
-  const service = (db: Database) => new ServersService(db, templates);
+  const service = (db: Database) => new ServersService(db, templates, new EventBusService());
 
   async function fixtures(db: Database) {
     const [admin] = await db

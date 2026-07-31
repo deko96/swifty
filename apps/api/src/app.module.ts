@@ -8,7 +8,9 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { EnvModule } from './config/env.module';
 import { DatabaseModule } from './db/database.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { EventsModule } from './modules/events/events.module';
 import { HealthModule } from './modules/health/health.module';
+import { ModuleHostModule } from './modules/module-host/module-host.module';
 import { NodesModule } from './modules/nodes/nodes.module';
 import { ServersModule } from './modules/servers/servers.module';
 import { SettingsModule } from './modules/settings/settings.module';
@@ -21,6 +23,7 @@ import { UsersModule } from './modules/users/users.module';
     EnvModule,
     DatabaseModule,
     SettingsModule,
+    EventsModule,
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     HealthModule,
     AuthModule,
@@ -29,6 +32,7 @@ import { UsersModule } from './modules/users/users.module';
     NodesModule,
     TemplatesModule,
     ServersModule,
+    ModuleHostModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },
