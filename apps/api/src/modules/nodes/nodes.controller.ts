@@ -3,11 +3,13 @@ import {
   Controller,
   Delete,
   Get,
+  Header,
   HttpCode,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
+  Req,
 } from '@nestjs/common';
 import {
   ApiConflictResponse,
@@ -19,13 +21,18 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { UserRole } from '@swifty/sdk';
+import type { Request } from 'express';
 import { z } from 'zod';
+import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { errorResponseSchema } from '../../common/error.schemas';
 import { apiSchema } from '../../common/openapi';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
+import { EnvService } from '../../config/env.service';
+import { renderInstallScript } from './install-script';
 import {
   allocationResponseSchema,
   type CreateAllocationsBody,
@@ -33,9 +40,12 @@ import {
   createAllocationsResponseSchema,
   createAllocationsSchema,
   createNodeSchema,
+  joinTokenResponseSchema,
   nodeConfigResponseSchema,
   nodeHealthResponseSchema,
   nodeResponseSchema,
+  type RegisterNodeBody,
+  registerNodeSchema,
   type UpdateNodeBody,
   updateNodeSchema,
 } from './nodes.schemas';
@@ -51,7 +61,68 @@ import { NodesService } from './nodes.service';
 @Roles(UserRole.Admin)
 @Controller('nodes')
 export class NodesController {
-  constructor(private readonly nodesService: NodesService) {}
+  constructor(
+    private readonly nodesService: NodesService,
+    private readonly env: EnvService,
+  ) {}
+
+  @Post('join-tokens')
+  @ApiOperation({
+    summary: 'Issue a node join token',
+    description:
+      'Creates a one-time token a fresh machine uses to register itself as a node. It ' +
+      'expires after 15 minutes and burns on first use. Paste it into the install command ' +
+      'shown by the node setup screen. Admin only.',
+  })
+  @ApiCreatedResponse({
+    description: 'The join token and its expiry.',
+    schema: apiSchema(joinTokenResponseSchema),
+  })
+  async createJoinToken() {
+    return this.nodesService.createJoinToken();
+  }
+
+  @Public()
+  @Roles()
+  @Post('register')
+  @ApiOperation({
+    summary: 'Register a node (called by the daemon)',
+    description:
+      'Exchanges a one-time join token for this node’s daemon configuration. Machines call ' +
+      'this through `swiftyd join` during installation — you should never need to call it ' +
+      'yourself. The returned token authenticates the node from then on.',
+  })
+  @ApiCreatedResponse({
+    description: 'Daemon configuration for the new node.',
+    schema: apiSchema(nodeConfigResponseSchema),
+  })
+  @ApiUnauthorizedResponse({
+    description: 'The join token is unknown, expired, or already used.',
+    schema: apiSchema(errorResponseSchema),
+  })
+  async register(
+    @Body(new ZodValidationPipe(registerNodeSchema)) body: RegisterNodeBody,
+    @Req() request: Request,
+  ) {
+    return this.nodesService.registerNode(body, request.ip ?? '');
+  }
+
+  @Public()
+  @Roles()
+  @Get('install-script')
+  @Header('Content-Type', 'text/plain; charset=utf-8')
+  @ApiOperation({
+    summary: 'Node installer script',
+    description:
+      'A POSIX shell script that installs the daemon and joins this panel: ' +
+      '`curl -sSL <panel>/api/v1/nodes/install-script | sh -s -- --join <token>`.',
+  })
+  @ApiOkResponse({ description: 'The installer script.' })
+  installScript(@Req() request: Request) {
+    const panelUrl =
+      this.env.panelUrl ?? `${request.protocol}://${request.get('host') ?? 'localhost'}`;
+    return renderInstallScript(panelUrl);
+  }
 
   @Get()
   @ApiOperation({

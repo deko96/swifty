@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { AppException } from '../../common/app.exception';
 import {
   decryptSecret,
@@ -10,10 +10,17 @@ import {
 } from '../../common/crypto';
 import { EnvService } from '../../config/env.service';
 import { DATABASE, type Database } from '../../db/database.module';
-import { allocations, type Node, nodes, servers } from '../../db/schema';
+import { allocations, type Node, nodeJoinTokens, nodes, servers } from '../../db/schema';
 import { AgentRegistry } from '../agent-gateway/agent.registry';
-import type { CreateAllocationsBody, CreateNodeBody, UpdateNodeBody } from './nodes.schemas';
+import type {
+  CreateAllocationsBody,
+  CreateNodeBody,
+  RegisterNodeBody,
+  UpdateNodeBody,
+} from './nodes.schemas';
 import { expandPortEntries } from './port-range';
+
+export const JOIN_TOKEN_TTL_MS = 15 * 60_000;
 
 @Injectable()
 export class NodesService {
@@ -116,6 +123,72 @@ export class NodesService {
       throw new AppException(404, 'nodes.not_found', 'Node not found');
     }
     return node;
+  }
+
+  async createJoinToken(): Promise<{ token: string; expiresAt: Date }> {
+    const token = generateToken(TOKEN_PREFIX.NodeJoin);
+    const expiresAt = new Date(Date.now() + JOIN_TOKEN_TTL_MS);
+    await this.db.insert(nodeJoinTokens).values({ tokenHash: hashToken(token), expiresAt });
+    return { token, expiresAt };
+  }
+
+  /**
+   * Called by a fresh daemon with a one-time join token: spends the token,
+   * creates the node, and returns the daemon configuration — the only time
+   * the node token leaves the panel in plaintext.
+   */
+  async registerNode(body: RegisterNodeBody, remoteAddress: string) {
+    const node = await this.db.transaction(async (tx) => {
+      const [spent] = await tx
+        .update(nodeJoinTokens)
+        .set({ usedAt: new Date() })
+        .where(
+          and(eq(nodeJoinTokens.tokenHash, hashToken(body.token)), isNull(nodeJoinTokens.usedAt)),
+        )
+        .returning();
+      if (!spent || spent.expiresAt < new Date()) {
+        throw new AppException(
+          401,
+          'nodes.join_token_invalid',
+          'This join token is unknown, expired, or already used — issue a fresh one',
+        );
+      }
+
+      const token = generateToken(TOKEN_PREFIX.Node);
+      const [created] = await tx
+        .insert(nodes)
+        .values({
+          name: await this.availableName(tx, body.hostname),
+          fqdn: body.fqdn ?? remoteAddress,
+          daemonPort: body.daemonPort,
+          tokenEncrypted: encryptSecret(token, this.env.appSecret),
+          tokenHash: hashToken(token),
+          memoryMb: 0,
+          diskMb: 0,
+        })
+        .returning();
+      if (!created) {
+        throw new Error('Insert returned no row');
+      }
+      return created;
+    });
+
+    return this.daemonConfig(node);
+  }
+
+  /** Node names are unique; a re-joining hostname gets a numeric suffix. */
+  private async availableName(tx: Pick<Database, 'select'>, hostname: string): Promise<string> {
+    const taken = new Set(
+      (await tx.select({ name: nodes.name }).from(nodes)).map((row) => row.name),
+    );
+    if (!taken.has(hostname)) {
+      return hostname;
+    }
+    let suffix = 2;
+    while (taken.has(`${hostname}-${suffix}`)) {
+      suffix += 1;
+    }
+    return `${hostname}-${suffix}`;
   }
 
   daemonConfig(node: Node): { listen: string; token: string; dataDir: string; panelUrl?: string } {

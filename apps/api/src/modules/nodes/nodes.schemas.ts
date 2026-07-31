@@ -49,6 +49,10 @@ export const nodeConfigResponseSchema = z.object({
   listen: z.string().describe('Address the daemon should bind, host:port'),
   token: z.string().describe('Secret this node uses to authenticate the panel — keep it private'),
   dataDir: z.string().describe('Directory game servers live in on the node'),
+  panelUrl: z
+    .string()
+    .optional()
+    .describe('Panel base URL the daemon dials for the agent channel, when configured'),
 });
 
 export const nodeHealthResponseSchema = z.object({
@@ -83,3 +87,21 @@ export const createAllocationsResponseSchema = z.object({
   created: z.int().describe('How many new allocations were added'),
   skipped: z.int().describe('How many already existed and were left untouched'),
 });
+
+export const joinTokenResponseSchema = z.object({
+  token: z.string().describe('One-time join token — paste it into the node install command'),
+  expiresAt: z.date().describe('The token stops working at this time and after first use'),
+});
+
+export const registerNodeSchema = z.object({
+  token: z.string().min(1).describe('One-time join token issued by an administrator'),
+  hostname: z.string().min(1).max(64).describe('Hostname of the machine; becomes the node name'),
+  fqdn: z
+    .string()
+    .max(255)
+    .optional()
+    .describe('Address the panel and players reach this node on; defaults to the request source'),
+  daemonPort: z.int().min(1).max(65535).default(8443),
+});
+
+export type RegisterNodeBody = z.infer<typeof registerNodeSchema>;

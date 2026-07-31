@@ -25,6 +25,7 @@ export const ERROR_CODES = [
   'nodes.has_servers',
   'nodes.offline',
   'nodes.command_timeout',
+  'nodes.join_token_invalid',
   'allocations.not_found',
   'allocations.in_use',
   'allocations.range_too_large',
