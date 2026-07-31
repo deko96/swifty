@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Env } from './env';
+import { DEFAULT_CONFIG_DIR } from './panel-config';
 
 @Injectable()
 export class EnvService {
@@ -18,8 +19,12 @@ export class EnvService {
     return this.config.get('HTTP_PORT', { infer: true });
   }
 
-  get databaseUrl(): string {
+  get databaseUrl(): string | undefined {
     return this.config.get('DATABASE_URL', { infer: true });
+  }
+
+  get configDir(): string {
+    return this.config.get('CONFIG_DIR', { infer: true }) ?? DEFAULT_CONFIG_DIR;
   }
 
   get redisUrl(): string {
