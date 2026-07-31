@@ -74,8 +74,14 @@ single YAML file plus a validation run.
 Open a GitHub issue. For anything security-sensitive, **do not open a public
 issue** — see [SECURITY.md](SECURITY.md).
 
+## License of contributions
+
+The Swifty source code is MIT licensed, and contributions follow the usual
+inbound = outbound rule: by submitting a pull request you agree that your
+contribution is licensed under the [MIT license](LICENSE). There is no CLA
+to sign.
+
 ## Trademark note
 
-The Swifty source code is MIT licensed. The "Swifty" name and logo are
-trademarks of the project maintainers: forks are welcome, but please ship
-them under a different name.
+The "Swifty" name and logo are trademarks of the project maintainers:
+forks are welcome, but please ship them under a different name.

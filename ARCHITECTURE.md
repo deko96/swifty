@@ -253,20 +253,36 @@ day one — bolted-on plugin systems always leak.
 
 - **Core**: **MIT** (decided) plus a trademark policy — the "Swifty"
   name/logo stay protected, so hosts adopt freely and competitors can fork
-  the code but not the brand.
-- **Paid modules**: proprietary, distributed through your own module
-  registry (a private npm registry — the JS ecosystem gives you this
-  distribution channel for free) with license-key activation: a signed
-  license file verified by the module, phone-home optional/graceful —
-  hosting people hate hard phone-home. Realistic paid lineup:
-  - WHMCS / WISECP / blesta billing integration (the #1 seller in this market)
-  - Reseller & sub-panel system
-  - Auto-deploy / node balancing
-  - S3 backups + one-click server migration between nodes
-  - Subdomain manager (`cs.customer.host` → A record + port)
-  - Advanced DDoS/firewall orchestration, TS3/Discord bots, mobile app
-- **Marketplace** for third-party modules/templates/themes later — take a
-  cut, and it deepens the moat more than any single feature.
+  the code but not the brand. MIT (rather than a copyleft license) is
+  deliberate: paid and third-party modules load in-process into the panel,
+  and only a permissive core keeps proprietary in-process modules legally
+  clean. Contributions are inbound = outbound (MIT), so no CLA is needed —
+  paid modules live in separate private repositories and are never
+  entangled with community contributions to core.
+- **Revenue model** (decided July 2026): two streams to start, chosen for
+  low ongoing effort — this is a side project, adoption comes first.
+  1. **Provider tier — paid modules under yearly commercial licenses**,
+     aimed at hosting companies, not hobbyists. The line: everything a
+     person hosting for friends needs is free forever; features you only
+     need when charging customers are paid. Proprietary, distributed
+     through your own module registry (a private npm registry — the JS
+     ecosystem gives you this distribution channel for free) with
+     license-key activation: a signed license file verified by the module,
+     phone-home optional/graceful — hosting people hate hard phone-home.
+     Realistic paid lineup:
+     - WHMCS / WISECP / blesta billing integration (the #1 seller in this market)
+     - Reseller & sub-panel system + white-label branding
+     - Auto-deploy / node balancing
+     - S3 backups + one-click server migration between nodes
+     - Subdomain manager (`cs.customer.host` → A record + port)
+     - Advanced DDoS/firewall orchestration, TS3/Discord bots, mobile app
+  2. **GitHub Sponsors** from day one (`.github/FUNDING.yml`) —
+     supplementary, not the plan.
+- **Deferred, deliberately**: a marketplace cut on third-party
+  modules/templates/themes (needs an ecosystem to exist first — but it
+  deepens the moat more than any single feature, revisit once there is
+  one) and a hosted control plane SaaS (strongest model, worst on-call
+  burden; revisit when the panel is stable and demand shows up).
 
 ---
 
