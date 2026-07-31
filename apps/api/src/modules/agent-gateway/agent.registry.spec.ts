@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import type { WebSocket } from 'ws';
-import { AgentRegistry } from './agent-registry';
+import { AgentRegistry } from './agent.registry';
 
 const NODE_ID = 'e0d5a6f1-2b3c-4d5e-8f90-1a2b3c4d5e6f';
 

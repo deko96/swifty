@@ -5,9 +5,9 @@ import type { EnvService } from '../../config/env.service';
 import type { Database } from '../../db/database.module';
 import { createTestHarness, describeDb } from '../../testing/harness';
 import { NodesService } from '../nodes/nodes.service';
+import { AgentRegistry } from './agent.registry';
 import { AgentAuthService } from './agent-auth.service';
 import type { HelloData } from './agent-gateway.schemas';
-import { AgentRegistry } from './agent-registry';
 
 describeDb('AgentAuthService (integration)', () => {
   const harness = createTestHarness();

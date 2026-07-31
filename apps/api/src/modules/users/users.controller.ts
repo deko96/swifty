@@ -23,7 +23,7 @@ import { z } from 'zod';
 import { AppException } from '../../common/app.exception';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { errorResponseSchema } from '../../common/error.schema';
+import { errorResponseSchema } from '../../common/error.schemas';
 import { apiSchema } from '../../common/openapi';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import type { User } from '../../db/schema';

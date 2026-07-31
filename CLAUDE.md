@@ -50,6 +50,17 @@ push. Never bypass them with `--no-verify`; fix the failure instead.
   `apps/api/src/common/crypto.ts`, settings keys and cookie names from their
   exported constants. Comparing or storing a raw `'admin'`-style literal is
   a review blocker.
+- File naming in `apps/api`: a dotted role suffix (`<name>.<role>.ts` —
+  `.module`, `.controller`, `.service`, `.gateway`, `.guard`, `.pipe`,
+  `.filter`, `.middleware`, `.decorator`, `.serializer`, `.schemas`,
+  `.exception`, `.registry`) marks a NestJS artifact; the prefix is the class
+  name minus its role word, kebab-cased (`AgentGateway` → `agent.gateway.ts`).
+  Plain kebab-case (`port-range.ts`, `start-command.ts`) marks pure domain
+  helpers — exported functions and constants, no DI. Zod shape files are
+  always plural `.schemas.ts`. Tests mirror the file under test as
+  `<file>.spec.ts` / `<file>.integration.spec.ts`. Non-Nest workspaces
+  (`apps/web`, `packages/*`, `db/schema/`) use plain kebab-case with no role
+  suffixes.
 - Code must be self-descriptive. Do not write comments that narrate what the
   code does, restate types, or justify a change — no comments is the default.
   A comment is acceptable only for a non-obvious constraint the code cannot

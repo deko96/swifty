@@ -10,7 +10,7 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator';
-import { errorResponseSchema } from '../../common/error.schema';
+import { errorResponseSchema } from '../../common/error.schemas';
 import { apiSchema } from '../../common/openapi';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { setSessionCookie } from '../../common/session-cookie';

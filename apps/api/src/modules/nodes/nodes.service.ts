@@ -11,7 +11,7 @@ import {
 import { EnvService } from '../../config/env.service';
 import { DATABASE, type Database } from '../../db/database.module';
 import { allocations, type Node, nodes, servers } from '../../db/schema';
-import { AgentRegistry } from '../agent-gateway/agent-registry';
+import { AgentRegistry } from '../agent-gateway/agent.registry';
 import type { CreateAllocationsBody, CreateNodeBody, UpdateNodeBody } from './nodes.schemas';
 import { expandPortEntries } from './port-range';
 

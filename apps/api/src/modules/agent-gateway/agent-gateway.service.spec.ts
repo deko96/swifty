@@ -2,9 +2,9 @@ import { describe, expect, it } from 'bun:test';
 import { AGENT_PROTOCOL_VERSION, AgentCommands, PowerAction } from '@swifty/sdk';
 import type { WebSocket } from 'ws';
 import { expectAppError } from '../../testing/harness';
+import { AgentRegistry } from './agent.registry';
 import type { ResultData } from './agent-gateway.schemas';
 import { AgentGatewayService } from './agent-gateway.service';
-import { AgentRegistry } from './agent-registry';
 
 const NODE_ID = 'e0d5a6f1-2b3c-4d5e-8f90-1a2b3c4d5e6f';
 const SERVER_ID = 'b6f7f0d2-4c1a-4a2e-9b83-2f6e4b8a91c5';

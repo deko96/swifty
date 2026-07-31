@@ -4,7 +4,7 @@ import type { EnvService } from '../../config/env.service';
 import type { Database } from '../../db/database.module';
 import { allocations, servers, users } from '../../db/schema';
 import { createTestHarness, describeDb, expectAppError, mustExist } from '../../testing/harness';
-import { AgentRegistry } from '../agent-gateway/agent-registry';
+import { AgentRegistry } from '../agent-gateway/agent.registry';
 import { NodesService } from './nodes.service';
 
 describeDb('NodesService (integration)', () => {

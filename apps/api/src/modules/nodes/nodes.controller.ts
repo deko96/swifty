@@ -23,7 +23,7 @@ import {
 import { UserRole } from '@swifty/sdk';
 import { z } from 'zod';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { errorResponseSchema } from '../../common/error.schema';
+import { errorResponseSchema } from '../../common/error.schemas';
 import { apiSchema } from '../../common/openapi';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import {
