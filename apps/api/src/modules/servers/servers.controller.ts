@@ -32,6 +32,8 @@ import { NodesService } from '../nodes/nodes.service';
 import {
   type CreateServerBody,
   createServerSchema,
+  type PowerBody,
+  powerBodySchema,
   serverResponseSchema,
   sftpCredentialsResponseSchema,
   sftpInfoResponseSchema,
@@ -172,6 +174,33 @@ export class ServersController {
   async rotateSftp(@CurrentUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
     const { info, password } = await this.serversService.rotateSftpPassword(user, id);
     return { ...info, password };
+  }
+
+  @Post(':id/power')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: 'Start, restart, stop, or kill a server',
+    description:
+      'Sends a power action to the node daemon and waits for it to be accepted. start and ' +
+      'restart boot the server with its template command and resource limits; stop asks the ' +
+      'game to shut down gracefully; kill terminates it immediately. The live run state ' +
+      'appears as powerState on the server resource.',
+  })
+  @ApiNoContentResponse({ description: 'The node accepted the power action.' })
+  @ApiNotFoundResponse({
+    description: 'No server with this ID, or it is not yours.',
+    schema: apiSchema(errorResponseSchema),
+  })
+  @ApiConflictResponse({
+    description: 'The server is suspended or has not finished installing.',
+    schema: apiSchema(errorResponseSchema),
+  })
+  async power(
+    @CurrentUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(powerBodySchema)) body: PowerBody,
+  ) {
+    await this.serversService.power(user, id, body.action);
   }
 
   @Delete(':id')

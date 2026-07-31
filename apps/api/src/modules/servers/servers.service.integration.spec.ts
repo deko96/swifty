@@ -1,12 +1,14 @@
 import { afterAll, beforeAll, expect, it } from 'bun:test';
-import { ServerStatus, UserRole } from '@swifty/sdk';
+import { AgentCommands, PowerAction, ServerStatus, UserRole } from '@swifty/sdk';
 import { eq } from 'drizzle-orm';
 import type { Database } from '../../db/database.module';
-import { allocations, nodes, users } from '../../db/schema';
+import { allocations, nodes, servers, users } from '../../db/schema';
 import { createTestHarness, describeDb, expectAppError, mustExist } from '../../testing/harness';
+import { AgentRegistry } from '../agent-gateway/agent.registry';
+import { AgentGatewayService } from '../agent-gateway/agent-gateway.service';
 import { EventBusService } from '../events/event-bus.service';
 import { TemplatesService } from '../templates/templates.service';
-import { ServersService } from './servers.service';
+import { DEFAULT_PIDS_LIMIT, ServersService } from './servers.service';
 
 describeDb('ServersService (integration)', () => {
   const harness = createTestHarness();
@@ -14,7 +16,13 @@ describeDb('ServersService (integration)', () => {
   beforeAll(() => templates.onModuleInit());
   afterAll(() => harness.close());
 
-  const service = (db: Database) => new ServersService(db, templates, new EventBusService());
+  const service = (db: Database) =>
+    new ServersService(
+      db,
+      templates,
+      new EventBusService(),
+      new AgentGatewayService(new AgentRegistry()),
+    );
 
   async function fixtures(db: Database) {
     const [admin] = await db
@@ -178,5 +186,101 @@ describeDb('ServersService (integration)', () => {
       expect(freed?.primary).toBe(false);
       await expectAppError(servers.findFor(f.admin, server.id), 'servers.not_found');
       await expectAppError(servers.delete(server.id), 'servers.not_found');
+    }));
+
+  interface SentCommand {
+    nodeId: string;
+    event: string;
+    payload: Record<string, unknown>;
+  }
+
+  function fakeAgents(sent: SentCommand[], ok = true, error?: string): AgentGatewayService {
+    return {
+      sendCommand: async (nodeId: string, event: string, payload: Record<string, unknown>) => {
+        sent.push({ nodeId, event, payload });
+        return { v: 1, id: 'reply', commandId: 'cmd', ok, ...(error ? { error } : {}) };
+      },
+    } as unknown as AgentGatewayService;
+  }
+
+  const powerService = (db: Database, agents: AgentGatewayService) =>
+    new ServersService(db, templates, new EventBusService(), agents);
+
+  it('start dispatches the rendered command, env, and limits to the node', () =>
+    harness.tx(async (db) => {
+      const f = await fixtures(db);
+      const sent: SentCommand[] = [];
+      const servers_ = powerService(db, fakeAgents(sent));
+      const { server } = await servers_.create(body(f));
+      await db
+        .update(servers)
+        .set({ status: ServerStatus.Installed })
+        .where(eq(servers.id, server.id));
+
+      await servers_.power(f.owner, server.id, PowerAction.Start);
+
+      expect(sent).toHaveLength(1);
+      const command = mustExist(sent[0]);
+      expect(command.nodeId).toBe(f.node.id);
+      expect(command.event).toBe(AgentCommands.Power);
+      expect(command.payload.action).toBe(PowerAction.Start);
+      const argv = command.payload.command as string[];
+      expect(argv[0]).toBe('./hlds_run');
+      expect(argv).toContain('10.0.0.1');
+      expect(argv).toContain('27015');
+      expect(command.payload.limits).toEqual({
+        cpuPercent: 100,
+        memoryMiB: 1024,
+        diskMiB: 10240,
+        pids: DEFAULT_PIDS_LIMIT,
+      });
+    }));
+
+  it('stop dispatches without a start payload', () =>
+    harness.tx(async (db) => {
+      const f = await fixtures(db);
+      const sent: SentCommand[] = [];
+      const servers_ = powerService(db, fakeAgents(sent));
+      const { server } = await servers_.create(body(f));
+
+      await servers_.power(f.owner, server.id, PowerAction.Stop);
+
+      const command = mustExist(sent[0]);
+      expect(command.payload.command).toBeUndefined();
+      expect(command.payload.limits).toBeUndefined();
+    }));
+
+  it('refuses to start suspended or not-yet-installed servers', () =>
+    harness.tx(async (db) => {
+      const f = await fixtures(db);
+      const sent: SentCommand[] = [];
+      const servers_ = powerService(db, fakeAgents(sent));
+      const { server } = await servers_.create(body(f));
+
+      await expectAppError(
+        servers_.power(f.owner, server.id, PowerAction.Start),
+        'servers.not_installed',
+      );
+      await db
+        .update(servers)
+        .set({ status: ServerStatus.Suspended })
+        .where(eq(servers.id, server.id));
+      await expectAppError(
+        servers_.power(f.owner, server.id, PowerAction.Restart),
+        'servers.suspended',
+      );
+      expect(sent).toHaveLength(0);
+    }));
+
+  it('surfaces a rejected power action as servers.power_failed', () =>
+    harness.tx(async (db) => {
+      const f = await fixtures(db);
+      const servers_ = powerService(db, fakeAgents([], false, 'unit is masked'));
+      const { server } = await servers_.create(body(f));
+
+      await expectAppError(
+        servers_.power(f.owner, server.id, PowerAction.Kill),
+        'servers.power_failed',
+      );
     }));
 });

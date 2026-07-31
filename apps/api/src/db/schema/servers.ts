@@ -1,4 +1,9 @@
-import { SERVER_STATUS_VALUES, ServerStatus } from '@swifty/sdk';
+import {
+  SERVER_POWER_STATE_VALUES,
+  SERVER_STATUS_VALUES,
+  ServerPowerState,
+  ServerStatus,
+} from '@swifty/sdk';
 import {
   integer,
   jsonb,
@@ -13,6 +18,7 @@ import { nodes } from './nodes';
 import { users } from './users';
 
 export const serverStatus = pgEnum('server_status', SERVER_STATUS_VALUES);
+export const serverPowerState = pgEnum('server_power_state', SERVER_POWER_STATE_VALUES);
 
 export const servers = pgTable('servers', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -25,6 +31,9 @@ export const servers = pgTable('servers', {
     .references(() => nodes.id, { onDelete: 'restrict' }),
   templateId: varchar('template_id', { length: 64 }).notNull(),
   status: serverStatus('status').notNull().default(ServerStatus.Installing),
+  powerState: serverPowerState('power_state').notNull().default(ServerPowerState.Offline),
+  powerStateChangedAt: timestamp('power_state_changed_at', { withTimezone: true }),
+  lastExitCode: integer('last_exit_code'),
   cpuPercent: integer('cpu_percent').notNull(),
   memoryMb: integer('memory_mb').notNull(),
   diskMb: integer('disk_mb').notNull(),

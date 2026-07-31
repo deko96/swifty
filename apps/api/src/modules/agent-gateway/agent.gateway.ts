@@ -8,7 +8,7 @@ import {
   SubscribeMessage,
   WebSocketGateway,
 } from '@nestjs/websockets';
-import { AGENT_PROTOCOL_VERSION, AgentEvents } from '@swifty/sdk';
+import { AGENT_PROTOCOL_VERSION, AgentCommands, AgentEvents } from '@swifty/sdk';
 import type { WebSocket } from 'ws';
 import type { ZodType } from 'zod';
 import { EventBusService } from '../events/event-bus.service';
@@ -21,6 +21,7 @@ import {
   stateDataSchema,
 } from './agent-gateway.schemas';
 import { AgentGatewayService } from './agent-gateway.service';
+import { ServerStateService } from './server-state.service';
 
 export const AGENT_CHANNEL_PATH = '/agent';
 
@@ -40,6 +41,7 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly registry: AgentRegistry,
     private readonly commands: AgentGatewayService,
     private readonly events: EventBusService,
+    private readonly serverState: ServerStateService,
   ) {}
 
   async handleConnection(client: WebSocket, request: IncomingMessage): Promise<void> {
@@ -52,6 +54,16 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
     await this.auth.recordSeen(node.id);
     this.events.emit('node.connected', { nodeId: node.id });
     this.logger.log(`node ${node.name} connected`);
+    await this.syncNode(node.id);
+  }
+
+  private async syncNode(nodeId: string): Promise<void> {
+    const desired = await this.serverState.desiredServersFor(nodeId);
+    try {
+      await this.commands.sendCommand(nodeId, AgentCommands.Sync, { servers: desired });
+    } catch (error) {
+      this.logger.warn(`sync to node ${nodeId} failed: ${String(error)}`);
+    }
   }
 
   async handleDisconnect(client: WebSocket): Promise<void> {
@@ -81,14 +93,12 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage(AgentEvents.State)
-  onState(@ConnectedSocket() client: WebSocket, @MessageBody() body: unknown): void {
+  async onState(@ConnectedSocket() client: WebSocket, @MessageBody() body: unknown): Promise<void> {
     const received = this.parse(client, AgentEvents.State, stateDataSchema, body);
     if (!received) {
       return;
     }
-    // Recorded against the server in the power-sync slice; observable
-    // already so daemons can push freely.
-    this.logger.debug(`server ${received.data.serverId} is ${received.data.state}`);
+    await this.serverState.recordState(received.data);
   }
 
   @SubscribeMessage(AgentEvents.InstallProgress)
