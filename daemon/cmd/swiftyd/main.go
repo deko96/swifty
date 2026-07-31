@@ -15,11 +15,12 @@ import (
 	"time"
 
 	"github.com/deko96/swifty/daemon/internal/api"
+	"github.com/deko96/swifty/daemon/internal/config"
 	"github.com/deko96/swifty/daemon/internal/version"
 )
 
 func main() {
-	listenAddr := flag.String("listen", "127.0.0.1:8443", "address the daemon API listens on")
+	configPath := flag.String("config", config.DefaultPath, "path to the daemon configuration file")
 	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
 
@@ -29,25 +30,32 @@ func main() {
 	}
 
 	logger := slog.New(slog.NewTextHandler(os.Stderr, nil))
-	if err := run(logger, *listenAddr); err != nil {
+
+	cfg, err := config.Load(*configPath)
+	if err != nil {
+		logger.Error("failed to load configuration", "error", err)
+		os.Exit(1)
+	}
+
+	if err := run(logger, cfg); err != nil {
 		logger.Error("daemon exited with error", "error", err)
 		os.Exit(1)
 	}
 }
 
-func run(logger *slog.Logger, listenAddr string) error {
+func run(logger *slog.Logger, cfg *config.Config) error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
 	server := &http.Server{
-		Addr:              listenAddr,
-		Handler:           api.NewRouter(),
+		Addr:              cfg.Listen,
+		Handler:           api.NewRouter(cfg.Token),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	errCh := make(chan error, 1)
 	go func() {
-		logger.Info("daemon API listening", "addr", listenAddr, "version", version.String())
+		logger.Info("daemon API listening", "addr", cfg.Listen, "version", version.String())
 		errCh <- server.ListenAndServe()
 	}()
 
