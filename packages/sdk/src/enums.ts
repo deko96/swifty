@@ -70,6 +70,28 @@ export const SERVER_POWER_STATE_VALUES = [
 ] as const;
 
 /**
+ * Host environment requirements probed by the setup wizard before the
+ * first admin is created; each check reports pass/fail with a detail line.
+ */
+export const SetupCheck = {
+  DataWrite: 'data_write',
+  OutboundHttps: 'outbound_https',
+  PortBind: 'port_bind',
+  Memory: 'memory',
+  Disk: 'disk',
+} as const;
+
+export type SetupCheck = (typeof SetupCheck)[keyof typeof SetupCheck];
+
+export const SETUP_CHECK_VALUES = [
+  SetupCheck.DataWrite,
+  SetupCheck.OutboundHttps,
+  SetupCheck.PortBind,
+  SetupCheck.Memory,
+  SetupCheck.Disk,
+] as const;
+
+/**
  * What a one-time token entitles its bearer to do. Issued hashed, spent on
  * first use; a token is only valid for the purpose it was issued for.
  */

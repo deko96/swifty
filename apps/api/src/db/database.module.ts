@@ -1,35 +1,51 @@
 import { Global, Module, type OnApplicationShutdown } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
-import { SQL } from 'bun';
-import { drizzle } from 'drizzle-orm/bun-sql';
-import { EnvService } from '../config/env.service';
-import * as schema from './schema';
+import { createDatabase, type Database, DatabaseHostService } from './database-host.service';
 
 export const DATABASE = Symbol('DATABASE');
 
-export type Database = ReturnType<typeof createDatabase>;
+export type { Database } from './database-host.service';
 
-function createDatabase(env: EnvService) {
-  const client = new SQL(env.databaseUrl);
-  return drizzle({ client, schema });
+/**
+ * Stands in for the real drizzle instance so consumers can inject DATABASE
+ * before setup has provided credentials. While unconfigured, reads of actual
+ * drizzle members throw `setup.database_not_configured`; anything else (Nest
+ * lifecycle-hook probes, `await`'s `then` lookup, inspection symbols) returns
+ * undefined, decided against a shape instance that never opens a connection —
+ * Bun's SQL client only dials on first query.
+ */
+function createDatabaseProxy(host: DatabaseHostService): Database {
+  const shape = createDatabase('postgres://unconfigured') as object;
+  return new Proxy({} as Database, {
+    get(_target, property) {
+      if (!host.configured && !(property in shape)) {
+        return undefined;
+      }
+      const db = host.database;
+      const value = Reflect.get(db as object, property, db);
+      return typeof value === 'function' ? value.bind(db) : value;
+    },
+    has(_target, property) {
+      return property in ((host.configured ? host.database : shape) as object);
+    },
+  });
 }
 
 @Global()
 @Module({
   providers: [
+    DatabaseHostService,
     {
       provide: DATABASE,
-      inject: [EnvService],
-      useFactory: createDatabase,
+      inject: [DatabaseHostService],
+      useFactory: createDatabaseProxy,
     },
   ],
-  exports: [DATABASE],
+  exports: [DATABASE, DatabaseHostService],
 })
 export class DatabaseModule implements OnApplicationShutdown {
-  constructor(private readonly moduleRef: ModuleRef) {}
+  constructor(private readonly host: DatabaseHostService) {}
 
   async onApplicationShutdown(): Promise<void> {
-    const db = this.moduleRef.get<Database>(DATABASE);
-    await db.$client.close();
+    await this.host.close();
   }
 }
