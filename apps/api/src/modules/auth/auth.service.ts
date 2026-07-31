@@ -1,5 +1,6 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
+import { AppException } from '../../common/app.exception';
 import { generateToken, hashToken } from '../../common/crypto';
 import { DATABASE, type Database } from '../../db/database.module';
 import { sessions, type User, users } from '../../db/schema';
@@ -22,7 +23,7 @@ export class AuthService {
   ): Promise<{ user: User; token: string }> {
     const [user] = await this.db.select().from(users).where(eq(users.email, email)).limit(1);
     if (!user || !(await Bun.password.verify(password, user.passwordHash))) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new AppException(401, 'auth.invalid_credentials', 'Invalid email or password');
     }
     return { user, token: await this.createSession(user, meta) };
   }

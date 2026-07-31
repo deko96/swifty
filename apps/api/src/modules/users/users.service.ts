@@ -1,11 +1,6 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
+import { AppException } from '../../common/app.exception';
 import { DATABASE, type Database } from '../../db/database.module';
 import { type User, users } from '../../db/schema';
 import type { CreateUserBody } from './users.schemas';
@@ -21,7 +16,7 @@ export class UsersService {
   async findById(id: string): Promise<User> {
     const [user] = await this.db.select().from(users).where(eq(users.id, id)).limit(1);
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new AppException(404, 'users.not_found', 'User not found');
     }
     return user;
   }
@@ -33,7 +28,7 @@ export class UsersService {
       .where(eq(users.email, body.email))
       .limit(1);
     if (byEmail) {
-      throw new ConflictException('A user with this email already exists');
+      throw new AppException(409, 'users.email_taken', 'A user with this email already exists');
     }
     const [byUsername] = await this.db
       .select()
@@ -41,7 +36,11 @@ export class UsersService {
       .where(eq(users.username, body.username))
       .limit(1);
     if (byUsername) {
-      throw new ConflictException('A user with this username already exists');
+      throw new AppException(
+        409,
+        'users.username_taken',
+        'A user with this username already exists',
+      );
     }
 
     const [user] = await this.db
@@ -68,7 +67,7 @@ export class UsersService {
         .where(eq(users.role, 'admin'))
         .limit(2);
       if (admins.length < 2) {
-        throw new BadRequestException('Cannot delete the last admin account');
+        throw new AppException(400, 'users.last_admin', 'Cannot delete the last admin account');
       }
     }
     await this.db.delete(users).where(eq(users.id, id));

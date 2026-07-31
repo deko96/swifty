@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from 'react';
 import { ApiError, completeSetup, type UserResponse } from './api';
+import { messageFor } from './errors';
 
 interface SetupWizardProps {
   onComplete: (admin: UserResponse) => void;
@@ -32,10 +33,10 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
       });
       onComplete(admin);
     } catch (error) {
-      if (error instanceof ApiError && error.fieldErrors.length > 0) {
-        setErrors(error.fieldErrors.map((e) => `${e.path}: ${e.message}`));
+      if (error instanceof ApiError && error.code === 'validation.failed') {
+        setErrors(error.details.map((detail) => `${detail.path}: ${detail.message}`));
       } else if (error instanceof ApiError) {
-        setErrors([error.message]);
+        setErrors([messageFor(error)]);
       } else {
         setErrors(['Could not reach the panel API']);
       }

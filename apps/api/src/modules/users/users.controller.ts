@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -20,8 +19,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { z } from 'zod';
+import { AppException } from '../../common/app.exception';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { errorResponseSchema } from '../../common/error.schema';
 import { apiSchema } from '../../common/openapi';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import type { User } from '../../db/schema';
@@ -32,7 +33,10 @@ import { UsersService } from './users.service';
 
 @ApiTags('Users')
 @ApiCookieAuth()
-@ApiForbiddenResponse({ description: 'Requires the admin role.' })
+@ApiForbiddenResponse({
+  description: 'Requires the admin role.',
+  schema: apiSchema(errorResponseSchema),
+})
 @Roles('admin')
 @Controller('users')
 export class UsersController {
@@ -67,7 +71,10 @@ export class UsersController {
     description: 'Returns one account by its ID. Admin only.',
   })
   @ApiOkResponse({ description: 'The account.', schema: apiSchema(userResponseSchema) })
-  @ApiNotFoundResponse({ description: 'No account with this ID.' })
+  @ApiNotFoundResponse({
+    description: 'No account with this ID.',
+    schema: apiSchema(errorResponseSchema),
+  })
   async get(@Param('id', ParseUUIDPipe) id: string) {
     return toUserResponse(await this.usersService.findById(id));
   }
@@ -81,10 +88,13 @@ export class UsersController {
       'own account. Admin only.',
   })
   @ApiNoContentResponse({ description: 'Account deleted.' })
-  @ApiNotFoundResponse({ description: 'No account with this ID.' })
+  @ApiNotFoundResponse({
+    description: 'No account with this ID.',
+    schema: apiSchema(errorResponseSchema),
+  })
   async delete(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     if (user.id === id) {
-      throw new BadRequestException('You cannot delete your own account');
+      throw new AppException(400, 'users.self_delete', 'You cannot delete your own account');
     }
     await this.usersService.delete(id);
   }

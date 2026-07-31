@@ -1,16 +1,29 @@
-export interface ApiFieldError {
-  path: string;
-  message: string;
-}
+import type { ApiErrorBody, ErrorCode, ValidationDetail } from '@swifty/sdk';
 
 export class ApiError extends Error {
   constructor(
-    message: string,
+    readonly body: ApiErrorBody,
     readonly status: number,
-    readonly fieldErrors: ApiFieldError[] = [],
   ) {
-    super(message);
+    super(body.message);
   }
+
+  get code(): ErrorCode {
+    return this.body.code;
+  }
+
+  get details(): ValidationDetail[] {
+    return this.body.details ?? [];
+  }
+}
+
+function isApiErrorBody(body: unknown): body is ApiErrorBody {
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    typeof (body as ApiErrorBody).code === 'string' &&
+    typeof (body as ApiErrorBody).message === 'string'
+  );
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -18,11 +31,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     ...init,
   });
-  const body = await response.json().catch(() => undefined);
+  const body: unknown = await response.json().catch(() => undefined);
   if (!response.ok) {
-    const message =
-      typeof body?.message === 'string' ? body.message : `Request failed (${response.status})`;
-    throw new ApiError(message, response.status, Array.isArray(body?.errors) ? body.errors : []);
+    throw new ApiError(
+      isApiErrorBody(body)
+        ? body
+        : { code: 'common.internal', message: `Request failed (${response.status})` },
+      response.status,
+    );
   }
   return body as T;
 }

@@ -6,9 +6,11 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
+import { errorResponseSchema } from '../../common/error.schema';
 import { apiSchema } from '../../common/openapi';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { setSessionCookie } from '../../common/session-cookie';
@@ -28,6 +30,7 @@ export class AuthController {
   ) {}
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('login')
   @ApiOperation({
     summary: 'Sign in',
@@ -40,7 +43,10 @@ export class AuthController {
     description: 'Signed in; session cookie set.',
     schema: apiSchema(userResponseSchema),
   })
-  @ApiUnauthorizedResponse({ description: 'Unknown email or wrong password.' })
+  @ApiUnauthorizedResponse({
+    description: 'Unknown email or wrong password.',
+    schema: apiSchema(errorResponseSchema),
+  })
   async login(
     @Body(new ZodValidationPipe(loginSchema)) body: LoginBody,
     @Req() request: AuthenticatedRequest,

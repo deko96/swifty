@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { BadRequestException } from '@nestjs/common';
 import { z } from 'zod';
+import { AppException } from '../app.exception';
 import { ZodValidationPipe } from './zod-validation.pipe';
 
 const schema = z.object({ email: z.email(), age: z.coerce.number().int().min(0) });
@@ -13,16 +13,19 @@ describe('ZodValidationPipe', () => {
     expect(result).toEqual({ email: 'a@b.com', age: 5 });
   });
 
-  it('throws BadRequestException with field paths for invalid bodies', () => {
+  it('throws a coded validation error listing each invalid field', () => {
     try {
       pipe.transform({ email: 'nope', age: -1 }, bodyMeta);
       throw new Error('expected pipe to throw');
     } catch (error) {
-      expect(error).toBeInstanceOf(BadRequestException);
-      const response = (error as BadRequestException).getResponse() as {
-        errors: Array<{ path: string }>;
-      };
-      expect(response.errors.map((e) => e.path)).toEqual(['email', 'age']);
+      expect(error).toBeInstanceOf(AppException);
+      const exception = error as AppException;
+      expect(exception.getStatus()).toBe(400);
+      expect(exception.code).toBe('validation.failed');
+      expect(exception.details?.map((d) => d.path)).toEqual(['email', 'age']);
+      for (const detail of exception.details ?? []) {
+        expect(detail.rule.length).toBeGreaterThan(0);
+      }
     }
   });
 

@@ -1,14 +1,9 @@
-import {
-  type CanActivate,
-  type ExecutionContext,
-  Inject,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { type CanActivate, type ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { eq } from 'drizzle-orm';
 import { DATABASE, type Database } from '../../db/database.module';
 import { apiKeys, sessions, users } from '../../db/schema';
+import { AppException } from '../app.exception';
 import { hashToken } from '../crypto';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { type AuthenticatedRequest, SESSION_COOKIE } from '../types';
@@ -43,7 +38,7 @@ export class AuthGuard implements CanActivate {
       return true;
     }
 
-    throw new UnauthorizedException('Authentication required');
+    throw new AppException(401, 'auth.unauthenticated', 'Authentication required');
   }
 
   private async userFromSession(token: string) {
@@ -55,7 +50,7 @@ export class AuthGuard implements CanActivate {
       .limit(1);
 
     if (!row || row.session.expiresAt < new Date()) {
-      throw new UnauthorizedException('Invalid or expired session');
+      throw new AppException(401, 'auth.session_expired', 'Invalid or expired session');
     }
     return row.user;
   }
@@ -69,7 +64,7 @@ export class AuthGuard implements CanActivate {
       .limit(1);
 
     if (!row) {
-      throw new UnauthorizedException('Invalid API key');
+      throw new AppException(401, 'auth.invalid_api_key', 'Invalid API key');
     }
     void this.db.update(apiKeys).set({ lastUsedAt: new Date() }).where(eq(apiKeys.id, row.key.id));
     return row.user;

@@ -19,6 +19,7 @@
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/swagger": "^11.4.6",
+    "@nestjs/throttler": "^6.5.0",
     "@scalar/nestjs-api-reference": "^1.2.11",
     "@swifty/sdk": "workspace:*",
     "cookie-parser": "^1.4.7",

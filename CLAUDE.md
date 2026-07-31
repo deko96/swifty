@@ -28,6 +28,10 @@ in `daemon/`. Design decisions live in ARCHITECTURE.md.
   with `@Public()`, restrict with `@Roles('admin')`.
 - Tokens (sessions, API keys) are stored hashed; only their SHA-256 hash
   ever touches the database.
+- Errors: throw `AppException` with a code from `ERROR_CODES` in
+  `@swifty/sdk` — never raw Nest HttpExceptions in domain code. All error
+  responses share `{ code, message, details?, requestId }` via the global
+  filter; add new codes to the SDK, they are part of the API contract.
 
 Git hooks (lefthook, installed by `bun install`): Biome on staged files at
 commit, Conventional Commit validation on the message, `bun run check` on

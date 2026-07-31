@@ -24,7 +24,13 @@ async function bootstrap(): Promise<void> {
         'sets authenticates later requests. For scripts and integrations, use an API key ' +
         'instead: send it as `Authorization: Bearer sk_...`.\n\n' +
         '**Roles.** `admin` accounts manage the whole panel; `user` accounts only see their ' +
-        'own game servers.',
+        'own game servers.\n\n' +
+        '**Errors.** Every error response has the same shape: `{ code, message, details?, ' +
+        'requestId }`. `code` is a stable identifier (for example `auth.invalid_credentials`) ' +
+        'that you can rely on and translate; `message` is an English fallback. Validation ' +
+        'errors (`validation.failed`) list each invalid field under `details`. Include the ' +
+        '`requestId` when reporting a problem — it lets the operator find the exact request ' +
+        'in the logs.',
     )
     .setVersion('0.1.0')
     .addCookieAuth('swifty_session')

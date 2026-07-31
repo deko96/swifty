@@ -1,12 +1,6 @@
-import {
-  ConflictException,
-  ForbiddenException,
-  Inject,
-  Injectable,
-  Logger,
-  type OnApplicationBootstrap,
-} from '@nestjs/common';
+import { Inject, Injectable, Logger, type OnApplicationBootstrap } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
+import { AppException } from '../../common/app.exception';
 import { generateToken, hashToken } from '../../common/crypto';
 import { DATABASE, type Database } from '../../db/database.module';
 import { type User, users } from '../../db/schema';
@@ -46,21 +40,25 @@ export class SetupService implements OnApplicationBootstrap {
 
   async complete(body: CompleteSetupBody): Promise<User> {
     if (!(await this.isRequired())) {
-      throw new ConflictException('Setup has already been completed');
+      throw new AppException(409, 'setup.already_completed', 'Setup has already been completed');
     }
 
     const codeHash = await this.settings.get<string>(SETUP_CODE_HASH_KEY);
     if (!codeHash) {
-      throw new ForbiddenException('No setup code is active; restart the panel to generate one');
+      throw new AppException(
+        403,
+        'setup.no_active_code',
+        'No setup code is active; restart the panel to generate one',
+      );
     }
     if (hashToken(body.setupCode) !== codeHash) {
-      throw new ForbiddenException('Invalid setup code');
+      throw new AppException(403, 'setup.invalid_code', 'Invalid setup code');
     }
 
     // Consuming the code first makes it single-use even under concurrent requests.
     const consumed = await this.settings.delete(SETUP_CODE_HASH_KEY);
     if (!consumed) {
-      throw new ConflictException('Setup is already being completed');
+      throw new AppException(409, 'setup.already_completed', 'Setup is already being completed');
     }
 
     const [admin] = await this.db

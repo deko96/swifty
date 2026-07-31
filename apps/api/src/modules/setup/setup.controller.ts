@@ -7,8 +7,10 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { Public } from '../../common/decorators/public.decorator';
+import { errorResponseSchema } from '../../common/error.schema';
 import { apiSchema } from '../../common/openapi';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { setSessionCookie } from '../../common/session-cookie';
@@ -43,6 +45,7 @@ export class SetupController {
   }
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post()
   @ApiOperation({
     summary: 'Complete first-run setup',
@@ -57,8 +60,14 @@ export class SetupController {
     description: 'Setup completed; the created administrator is signed in.',
     schema: apiSchema(userResponseSchema),
   })
-  @ApiForbiddenResponse({ description: 'Missing or wrong setup code.' })
-  @ApiConflictResponse({ description: 'Setup has already been completed.' })
+  @ApiForbiddenResponse({
+    description: 'Missing or wrong setup code.',
+    schema: apiSchema(errorResponseSchema),
+  })
+  @ApiConflictResponse({
+    description: 'Setup has already been completed.',
+    schema: apiSchema(errorResponseSchema),
+  })
   async complete(
     @Body(new ZodValidationPipe(completeSetupSchema)) body: CompleteSetupBody,
     @Req() request: AuthenticatedRequest,
