@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, isNull } from 'drizzle-orm';
+import { TokenPurpose } from '@swifty/sdk';
+import { and, eq } from 'drizzle-orm';
 import { AppException } from '../../common/app.exception';
 import {
   decryptSecret,
@@ -10,15 +11,16 @@ import {
 } from '../../common/crypto';
 import { EnvService } from '../../config/env.service';
 import { DATABASE, type Database } from '../../db/database.module';
-import { allocations, type Node, nodeJoinTokens, nodes, servers } from '../../db/schema';
+import { allocations, type Node, nodes, servers } from '../../db/schema';
 import { AgentRegistry } from '../agent-gateway/agent.registry';
+import { TokensService } from '../tokens/tokens.service';
+import { expandPortEntries } from './domain/port-range';
 import type {
   CreateAllocationsBody,
   CreateNodeBody,
   RegisterNodeBody,
   UpdateNodeBody,
 } from './nodes.schemas';
-import { expandPortEntries } from './port-range';
 
 export const JOIN_TOKEN_TTL_MS = 15 * 60_000;
 
@@ -28,6 +30,7 @@ export class NodesService {
     @Inject(DATABASE) private readonly db: Database,
     private readonly env: EnvService,
     private readonly registry: AgentRegistry,
+    private readonly tokens: TokensService,
   ) {}
 
   async list(): Promise<Node[]> {
@@ -126,10 +129,7 @@ export class NodesService {
   }
 
   async createJoinToken(): Promise<{ token: string; expiresAt: Date }> {
-    const token = generateToken(TOKEN_PREFIX.NodeJoin);
-    const expiresAt = new Date(Date.now() + JOIN_TOKEN_TTL_MS);
-    await this.db.insert(nodeJoinTokens).values({ tokenHash: hashToken(token), expiresAt });
-    return { token, expiresAt };
+    return this.tokens.issue(TokenPurpose.NodeJoin, JOIN_TOKEN_TTL_MS);
   }
 
   /**
@@ -139,14 +139,8 @@ export class NodesService {
    */
   async registerNode(body: RegisterNodeBody, remoteAddress: string) {
     const node = await this.db.transaction(async (tx) => {
-      const [spent] = await tx
-        .update(nodeJoinTokens)
-        .set({ usedAt: new Date() })
-        .where(
-          and(eq(nodeJoinTokens.tokenHash, hashToken(body.token)), isNull(nodeJoinTokens.usedAt)),
-        )
-        .returning();
-      if (!spent || spent.expiresAt < new Date()) {
+      const spent = await this.tokens.consume(TokenPurpose.NodeJoin, body.token, tx);
+      if (!spent) {
         throw new AppException(
           401,
           'nodes.join_token_invalid',

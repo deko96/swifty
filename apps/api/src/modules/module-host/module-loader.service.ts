@@ -12,8 +12,8 @@ import { satisfies } from 'semver';
 import { EnvService } from '../../config/env.service';
 import { EventBusService } from '../events/event-bus.service';
 import { SettingsService } from '../settings/settings.service';
+import { buildModuleContext } from './domain/module-context';
 import { manifestSchema } from './manifest.schemas';
-import { buildModuleContext } from './module-context';
 
 const ENTRY_CANDIDATES = ['index.ts', 'index.js', 'index.mjs'];
 

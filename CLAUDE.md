@@ -67,9 +67,11 @@ push. Never bypass them with `--no-verify`; fix the failure instead.
   `.exception`, `.registry`) marks a NestJS artifact; the prefix is the class
   name minus its role word, kebab-cased (`AgentGateway` → `agent.gateway.ts`).
   Plain kebab-case (`port-range.ts`, `start-command.ts`) marks pure domain
-  helpers — exported functions and constants, no DI. Zod shape files are
-  always plural `.schemas.ts`. Tests mirror the file under test as
-  `<file>.spec.ts` / `<file>.integration.spec.ts`. Non-Nest workspaces
+  helpers — exported functions and constants, no DI — and they live in a
+  `domain/` subfolder of their module, so opening a module shows only its
+  NestJS skeleton. Zod shape files are always plural `.schemas.ts`. Tests
+  live in the module's `__tests__/` folder, named after the file under test
+  as `<file>.spec.ts` / `<file>.integration.spec.ts`. Non-Nest workspaces
   (`apps/web`, `packages/*`, `db/schema/`) use plain kebab-case with no role
   suffixes.
 - Code must be self-descriptive. Do not write comments that narrate what the
