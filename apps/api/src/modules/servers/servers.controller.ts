@@ -28,10 +28,13 @@ import { errorResponseSchema } from '../../common/error.schema';
 import { apiSchema } from '../../common/openapi';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import type { User } from '../../db/schema';
+import { NodesService } from '../nodes/nodes.service';
 import {
   type CreateServerBody,
   createServerSchema,
   serverResponseSchema,
+  sftpCredentialsResponseSchema,
+  sftpInfoResponseSchema,
   type UpdateServerBody,
   updateServerSchema,
 } from './servers.schemas';
@@ -42,7 +45,10 @@ import { ServersService } from './servers.service';
 @ApiCookieAuth()
 @Controller('servers')
 export class ServersController {
-  constructor(private readonly serversService: ServersService) {}
+  constructor(
+    private readonly serversService: ServersService,
+    private readonly nodesService: NodesService,
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -123,6 +129,49 @@ export class ServersController {
     @Body(new ZodValidationPipe(updateServerSchema)) body: UpdateServerBody,
   ) {
     return toServerResponse(await this.serversService.update(id, body));
+  }
+
+  @Get(':id/sftp')
+  @ApiOperation({
+    summary: 'Get SFTP connection details',
+    description:
+      'Returns the host, port, and username for uploading files to this server over SFTP. ' +
+      'The password is set separately with the rotate endpoint and never returned here. ' +
+      'Available to the server owner and admins.',
+  })
+  @ApiOkResponse({
+    description: 'SFTP connection details.',
+    schema: apiSchema(sftpInfoResponseSchema),
+  })
+  @ApiNotFoundResponse({
+    description: 'No server with this ID (or no access to it).',
+    schema: apiSchema(errorResponseSchema),
+  })
+  async sftp(@CurrentUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
+    const { server } = await this.serversService.findFor(user, id);
+    const node = await this.nodesService.findById(server.nodeId);
+    return this.serversService.sftpInfo(user, server, node);
+  }
+
+  @Post(':id/sftp/rotate')
+  @ApiOperation({
+    summary: 'Rotate the SFTP password',
+    description:
+      'Generates a new SFTP password for this server and returns it once. The previous ' +
+      'password stops working immediately. Store the new password now — it cannot be shown ' +
+      'again. Available to the server owner and admins.',
+  })
+  @ApiOkResponse({
+    description: 'New SFTP credentials, including the one-time password.',
+    schema: apiSchema(sftpCredentialsResponseSchema),
+  })
+  @ApiNotFoundResponse({
+    description: 'No server with this ID (or no access to it).',
+    schema: apiSchema(errorResponseSchema),
+  })
+  async rotateSftp(@CurrentUser() user: User, @Param('id', ParseUUIDPipe) id: string) {
+    const { info, password } = await this.serversService.rotateSftpPassword(user, id);
+    return { ...info, password };
   }
 
   @Delete(':id')

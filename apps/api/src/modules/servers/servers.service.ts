@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { UserRole } from '@swifty/sdk';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
@@ -6,6 +7,7 @@ import { DATABASE, type Database } from '../../db/database.module';
 import {
   type Allocation,
   allocations,
+  type Node,
   nodes,
   type Server,
   servers,
@@ -14,11 +16,20 @@ import {
 } from '../../db/schema';
 import { TemplatesService } from '../templates/templates.service';
 import type { CreateServerBody, UpdateServerBody } from './servers.schemas';
+import { generateSftpPassword, sftpUsername } from './sftp';
 import { resolveEnv } from './variable-rules';
+
+export const SFTP_PORT = 2022;
 
 export interface ServerWithAllocation {
   server: Server;
   allocation: Allocation | null;
+}
+
+export interface SftpInfo {
+  host: string;
+  port: number;
+  username: string;
 }
 
 @Injectable()
@@ -86,9 +97,11 @@ export class ServersService {
         );
       }
 
+      const id = randomUUID();
       const [server] = await tx
         .insert(servers)
         .values({
+          id,
           name: body.name,
           ownerId: body.ownerId,
           nodeId: body.nodeId,
@@ -97,6 +110,7 @@ export class ServersService {
           memoryMb: body.memoryMb,
           diskMb: body.diskMb,
           env,
+          sftpUsername: sftpUsername(id),
         })
         .returning();
       if (!server) {
@@ -143,6 +157,50 @@ export class ServersService {
     }
     const [withAllocation] = await this.withPrimaryAllocations([updated]);
     return withAllocation ?? { server: updated, allocation: null };
+  }
+
+  sftpInfo(user: User, server: Server, node: Node): SftpInfo {
+    void user;
+    return { host: node.fqdn, port: SFTP_PORT, username: server.sftpUsername };
+  }
+
+  async rotateSftpPassword(user: User, id: string): Promise<{ info: SftpInfo; password: string }> {
+    const { server } = await this.findFor(user, id);
+    const [node] = await this.db.select().from(nodes).where(eq(nodes.id, server.nodeId)).limit(1);
+    if (!node) {
+      throw new AppException(404, 'nodes.not_found', 'Node not found');
+    }
+
+    const password = generateSftpPassword();
+    await this.db
+      .update(servers)
+      .set({
+        sftpPasswordHash: await Bun.password.hash(password, 'argon2id'),
+        updatedAt: new Date(),
+      })
+      .where(eq(servers.id, id));
+
+    return { info: this.sftpInfo(user, server, node), password };
+  }
+
+  /**
+   * Verifies SFTP credentials for the daemon's embedded SFTP server. Returns
+   * the server directory to jail the session to, or null when the credentials
+   * do not match. Never throws AppException — this is a machine boundary.
+   */
+  async verifySftp(username: string, password: string): Promise<{ serverId: string } | null> {
+    const [server] = await this.db
+      .select()
+      .from(servers)
+      .where(eq(servers.sftpUsername, username))
+      .limit(1);
+    if (!server?.sftpPasswordHash) {
+      return null;
+    }
+    if (!(await Bun.password.verify(password, server.sftpPasswordHash))) {
+      return null;
+    }
+    return { serverId: server.id };
   }
 
   async delete(id: string): Promise<void> {

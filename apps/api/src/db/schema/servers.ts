@@ -1,5 +1,14 @@
 import { SERVER_STATUS_VALUES, ServerStatus } from '@swifty/sdk';
-import { integer, jsonb, pgEnum, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import {
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 import { nodes } from './nodes';
 import { users } from './users';
 
@@ -20,6 +29,8 @@ export const servers = pgTable('servers', {
   memoryMb: integer('memory_mb').notNull(),
   diskMb: integer('disk_mb').notNull(),
   env: jsonb('env').$type<Record<string, string>>().notNull().default({}),
+  sftpUsername: varchar('sftp_username', { length: 40 }).notNull().unique(),
+  sftpPasswordHash: text('sftp_password_hash'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

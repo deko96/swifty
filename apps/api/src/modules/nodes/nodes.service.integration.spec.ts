@@ -106,6 +106,7 @@ describeDb('NodesService (integration)', () => {
           cpuPercent: 100,
           memoryMb: 1024,
           diskMb: 10240,
+          sftpUsername: 'srv_test_fixture',
         })
         .returning();
       const used = list[0]!;
