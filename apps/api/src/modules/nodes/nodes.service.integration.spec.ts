@@ -4,6 +4,7 @@ import type { EnvService } from '../../config/env.service';
 import type { Database } from '../../db/database.module';
 import { allocations, servers, users } from '../../db/schema';
 import { createTestHarness, describeDb, expectAppError, mustExist } from '../../testing/harness';
+import { AgentRegistry } from '../agent-gateway/agent-registry';
 import { NodesService } from './nodes.service';
 
 describeDb('NodesService (integration)', () => {
@@ -11,7 +12,7 @@ describeDb('NodesService (integration)', () => {
   afterAll(() => harness.close());
 
   const env = { appSecret: 'integration-test-secret-32-chars!' } as EnvService;
-  const service = (db: Database) => new NodesService(db, env);
+  const service = (db: Database) => new NodesService(db, env, new AgentRegistry());
 
   const nodeBody = {
     name: 'node-1',

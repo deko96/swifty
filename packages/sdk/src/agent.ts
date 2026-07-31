@@ -113,6 +113,21 @@ export interface AgentEventMap {
 export type AgentCommandName = keyof AgentCommandMap;
 export type AgentEventName = keyof AgentEventMap;
 
+/** Runtime command names, for dispatching without string literals. */
+export const AgentCommands = {
+  Power: 'power',
+  Install: 'install',
+  Sync: 'sync',
+} as const satisfies Record<string, AgentCommandName>;
+
+/** Runtime event names, for dispatching without string literals. */
+export const AgentEvents = {
+  Hello: 'hello',
+  State: 'state',
+  InstallProgress: 'install.progress',
+  Result: 'result',
+} as const satisfies Record<string, AgentEventName>;
+
 export type AgentCommand<E extends AgentCommandName = AgentCommandName> = {
   [K in AgentCommandName]: { event: K; data: AgentMeta & AgentCommandMap[K] };
 }[E];

@@ -1,23 +1,45 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
+import { Inject, Injectable, Logger, type OnModuleInit } from '@nestjs/common';
+import { and, eq, isNull } from 'drizzle-orm';
 import { AppException } from '../../common/app.exception';
-import { decryptSecret, encryptSecret, generateToken, TOKEN_PREFIX } from '../../common/crypto';
+import {
+  decryptSecret,
+  encryptSecret,
+  generateToken,
+  hashToken,
+  TOKEN_PREFIX,
+} from '../../common/crypto';
 import { EnvService } from '../../config/env.service';
 import { DATABASE, type Database } from '../../db/database.module';
 import { allocations, type Node, nodes, servers } from '../../db/schema';
+import { AgentRegistry } from '../agent-gateway/agent-registry';
 import type { CreateAllocationsBody, CreateNodeBody, UpdateNodeBody } from './nodes.schemas';
 import { expandPortEntries } from './port-range';
 
-const DAEMON_TIMEOUT_MS = 5000;
-
 @Injectable()
-export class NodesService {
+export class NodesService implements OnModuleInit {
   private readonly logger = new Logger(NodesService.name);
 
   constructor(
     @Inject(DATABASE) private readonly db: Database,
     private readonly env: EnvService,
+    private readonly registry: AgentRegistry,
   ) {}
+
+  /**
+   * Nodes created before the agent channel have no token hash; derive it
+   * from the decryptable token so they can connect without a rotation.
+   */
+  async onModuleInit(): Promise<void> {
+    const stale = await this.db.select().from(nodes).where(isNull(nodes.tokenHash));
+    for (const node of stale) {
+      const token = decryptSecret(node.tokenEncrypted, this.env.appSecret);
+      await this.db
+        .update(nodes)
+        .set({ tokenHash: hashToken(token) })
+        .where(eq(nodes.id, node.id));
+      this.logger.log(`Backfilled token hash for node ${node.name}`);
+    }
+  }
 
   async list(): Promise<Node[]> {
     return this.db.select().from(nodes).orderBy(nodes.createdAt);
@@ -44,7 +66,11 @@ export class NodesService {
     const token = generateToken(TOKEN_PREFIX.Node);
     const [node] = await this.db
       .insert(nodes)
-      .values({ ...body, tokenEncrypted: encryptSecret(token, this.env.appSecret) })
+      .values({
+        ...body,
+        tokenEncrypted: encryptSecret(token, this.env.appSecret),
+        tokenHash: hashToken(token),
+      })
       .returning();
     if (!node) {
       throw new Error('Insert returned no row');
@@ -97,7 +123,11 @@ export class NodesService {
     const token = generateToken(TOKEN_PREFIX.Node);
     const [node] = await this.db
       .update(nodes)
-      .set({ tokenEncrypted: encryptSecret(token, this.env.appSecret), updatedAt: new Date() })
+      .set({
+        tokenEncrypted: encryptSecret(token, this.env.appSecret),
+        tokenHash: hashToken(token),
+        updatedAt: new Date(),
+      })
       .where(eq(nodes.id, id))
       .returning();
     if (!node) {
@@ -106,30 +136,21 @@ export class NodesService {
     return node;
   }
 
-  daemonConfig(node: Node): { listen: string; token: string; dataDir: string } {
+  daemonConfig(node: Node): { listen: string; token: string; dataDir: string; panelUrl?: string } {
     return {
       listen: `0.0.0.0:${node.daemonPort}`,
       token: decryptSecret(node.tokenEncrypted, this.env.appSecret),
       dataDir: '/opt/swifty/servers',
+      ...(this.env.panelUrl ? { panelUrl: this.env.panelUrl } : {}),
     };
   }
 
-  async checkHealth(node: Node): Promise<{ online: boolean; version?: string }> {
-    const token = decryptSecret(node.tokenEncrypted, this.env.appSecret);
-    try {
-      const response = await fetch(`http://${node.fqdn}:${node.daemonPort}/v1/system`, {
-        headers: { Authorization: `Bearer ${token}` },
-        signal: AbortSignal.timeout(DAEMON_TIMEOUT_MS),
-      });
-      if (!response.ok) {
-        return { online: false };
-      }
-      const body = (await response.json()) as { version?: string };
-      return { online: true, version: body.version };
-    } catch (error) {
-      this.logger.debug(`Node ${node.name} unreachable: ${String(error)}`);
-      return { online: false };
-    }
+  health(node: Node): { online: boolean; version?: string; lastSeenAt: Date | null } {
+    return {
+      online: this.registry.isOnline(node.id),
+      version: node.daemonVersion ?? undefined,
+      lastSeenAt: node.lastSeenAt,
+    };
   }
 
   async listAllocations(nodeId: string) {
