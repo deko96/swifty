@@ -70,6 +70,13 @@ export function createTestHarness(): TestHarness {
   };
 }
 
+export function mustExist<T>(value: T | undefined | null): T {
+  if (value == null) {
+    throw new Error('Expected fixture row to exist');
+  }
+  return value;
+}
+
 export async function expectAppError(promise: Promise<unknown>, code: ErrorCode): Promise<void> {
   try {
     await promise;
