@@ -5,6 +5,7 @@ export const TOKEN_PREFIX = {
   ApiKey: 'sk',
   Setup: 'setup',
   Node: 'node',
+  NodeJoin: 'join',
 } as const;
 
 export type TokenPrefix = (typeof TOKEN_PREFIX)[keyof typeof TOKEN_PREFIX];
