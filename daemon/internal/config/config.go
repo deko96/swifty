@@ -22,6 +22,10 @@ type Config struct {
 	Token string `json:"token"`
 	// DataDir is the directory game servers live in.
 	DataDir string `json:"dataDir"`
+	// PanelURL is the panel's base URL; when set, the daemon dials the
+	// panel's agent channel and keeps it connected. Empty disables the
+	// channel (HTTP-only mode).
+	PanelURL string `json:"panelUrl"`
 }
 
 func Load(path string) (*Config, error) {

@@ -1,6 +1,9 @@
 package supervisor
 
-import "strings"
+import (
+	"regexp"
+	"strings"
+)
 
 const (
 	unitPrefix = "swifty-"
@@ -13,6 +16,15 @@ const (
 
 func UnitName(id string) string {
 	return unitPrefix + id + ".service"
+}
+
+// Server IDs become unit names, usernames, and filesystem paths, so only
+// canonical lowercase UUIDs are accepted anywhere an ID enters the daemon.
+var idPattern = regexp.MustCompile(
+	`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+
+func ValidID(id string) bool {
+	return idPattern.MatchString(id)
 }
 
 // Username derives the server's Unix user from its UUID, within the

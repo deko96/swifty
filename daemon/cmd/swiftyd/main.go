@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/deko96/swifty/daemon/internal/agent"
 	"github.com/deko96/swifty/daemon/internal/api"
 	"github.com/deko96/swifty/daemon/internal/config"
 	"github.com/deko96/swifty/daemon/internal/supervisor"
@@ -48,10 +49,27 @@ func run(logger *slog.Logger, cfg *config.Config) error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
+	manager := supervisor.NewSystemd()
 	server := &http.Server{
 		Addr:              cfg.Listen,
-		Handler:           api.NewRouter(cfg.Token, supervisor.NewSystemd(), cfg.DataDir),
+		Handler:           api.NewRouter(cfg.Token, manager, cfg.DataDir),
 		ReadHeaderTimeout: 10 * time.Second,
+	}
+
+	if cfg.PanelURL != "" {
+		client := agent.NewClient(agent.Options{
+			PanelURL:      cfg.PanelURL,
+			Token:         cfg.Token,
+			DataDir:       cfg.DataDir,
+			DaemonVersion: version.String(),
+			Manager:       manager,
+			Logger:        logger,
+		})
+		go func() {
+			if err := client.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+				logger.Error("agent channel stopped", "error", err)
+			}
+		}()
 	}
 
 	errCh := make(chan error, 1)
