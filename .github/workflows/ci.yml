@@ -13,6 +13,20 @@ jobs:
   panel:
     name: Panel (lint, typecheck, test, build)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: swifty
+          POSTGRES_PASSWORD: swifty
+          POSTGRES_DB: swifty
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -31,6 +45,11 @@ jobs:
 
       - name: Test
         run: bun run test
+
+      - name: Migrate database
+        run: bun run --filter @swifty/api db:migrate
+        env:
+          DATABASE_URL: postgres://swifty:swifty@localhost:5432/swifty
 
       - name: Build
         run: bun run build

@@ -12,6 +12,21 @@ in `daemon/`. Design decisions live in ARCHITECTURE.md.
 - `bun run typecheck` — tsc across all workspaces
 - `bun run test` — bun tests + template validation
 - Daemon only: `cd daemon && gofmt -l . && go vet ./... && go test ./...`
+- Database (from `apps/api`, needs `DATABASE_URL`): `bun run db:generate`
+  after schema changes, `bun run db:migrate`, `bun run db:seed`
+
+## API conventions
+
+- Request/response shapes are zod schemas; validate bodies with
+  `ZodValidationPipe` and document with `apiSchema()` — never duplicate a
+  shape by hand.
+- Every endpoint carries `@ApiOperation` with a summary and a plain-language
+  description; the reference at `/api/docs` must stay complete and readable
+  by non-developers.
+- Endpoints are auth-required by default (global guard); opt out explicitly
+  with `@Public()`, restrict with `@Roles('admin')`.
+- Tokens (sessions, API keys) are stored hashed; only their SHA-256 hash
+  ever touches the database.
 
 Git hooks (lefthook, installed by `bun install`): Biome on staged files at
 commit, Conventional Commit validation on the message, `bun run check` on
