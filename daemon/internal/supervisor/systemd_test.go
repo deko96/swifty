@@ -11,11 +11,17 @@ type fakeRunner struct {
 	calls  [][]string
 	output string
 	code   int
+	codes  []int
 }
 
 func (f *fakeRunner) Run(_ context.Context, name string, args ...string) ([]byte, int, error) {
 	f.calls = append(f.calls, append([]string{name}, args...))
-	return []byte(f.output), f.code, nil
+	code := f.code
+	if len(f.codes) > 0 {
+		code = f.codes[0]
+		f.codes = f.codes[1:]
+	}
+	return []byte(f.output), code, nil
 }
 
 func testSpec() Spec {
@@ -63,8 +69,37 @@ func TestStartArgsEnforceIsolationAndLimits(t *testing.T) {
 	}
 }
 
+func TestSandboxHidesOtherServers(t *testing.T) {
+	spec := testSpec()
+	joined := strings.Join(sandboxProps(spec), " ")
+
+	for _, want := range []string{
+		"ProtectSystem=strict",
+		"ProtectHome=yes",
+		"ProtectProc=invisible",
+		"PrivateDevices=yes",
+		"RestrictSUIDSGID=yes",
+		"TemporaryFileSystem=/opt/swifty/servers",
+		"BindPaths=" + spec.Directory,
+		"ReadWritePaths=" + spec.Directory,
+	} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("sandboxProps missing %q in %q", want, joined)
+		}
+	}
+
+	if strings.Contains(joined, "MemoryDenyWriteExecute") {
+		t.Error("MemoryDenyWriteExecute must stay off for JIT runtimes")
+	}
+
+	start := strings.Join(startArgs(spec), " ")
+	if !strings.Contains(start, "TemporaryFileSystem=/opt/swifty/servers") {
+		t.Error("startArgs must include the mount sandbox")
+	}
+}
+
 func TestEnsureUserToleratesExisting(t *testing.T) {
-	runner := &fakeRunner{code: useraddExists}
+	runner := &fakeRunner{codes: []int{useraddExists, 0}}
 	s := &Systemd{runner: runner}
 	if err := s.EnsureUser(context.Background(), testSpec()); err != nil {
 		t.Fatalf("EnsureUser: %v", err)
@@ -72,8 +107,11 @@ func TestEnsureUserToleratesExisting(t *testing.T) {
 	if runner.calls[0][0] != "useradd" {
 		t.Errorf("expected useradd, got %v", runner.calls[0])
 	}
+	if !slices.Equal(runner.calls[1], []string{"chmod", "0750", testSpec().Directory}) {
+		t.Errorf("expected chmod 0750 after useradd, got %v", runner.calls[1])
+	}
 
-	runner.code = 1
+	runner.codes = []int{1}
 	if err := s.EnsureUser(context.Background(), testSpec()); err == nil {
 		t.Fatal("expected error for real useradd failure")
 	}

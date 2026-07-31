@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -75,6 +76,15 @@ func (s *Systemd) EnsureUser(ctx context.Context, spec Spec) error {
 	if code != 0 && code != useraddExists {
 		return fmt.Errorf("useradd %s: exit %d: %s", spec.UnixUser, code, out)
 	}
+
+	// 0750 keeps other server users out even without the mount sandbox.
+	out, code, err = s.runner.Run(ctx, "chmod", "0750", spec.Directory)
+	if err != nil {
+		return err
+	}
+	if code != 0 {
+		return fmt.Errorf("chmod %s: exit %d: %s", spec.Directory, code, out)
+	}
 	return nil
 }
 
@@ -114,15 +124,39 @@ func startArgs(spec Spec) []string {
 		"--property", fmt.Sprintf("MemoryMax=%dM", spec.Limits.MemoryMiB),
 		"--property", fmt.Sprintf("CPUQuota=%d%%", spec.Limits.CPUPercent),
 		"--property", fmt.Sprintf("TasksMax=%d", pids),
-		"--property", "NoNewPrivileges=yes",
-		"--property", "PrivateTmp=yes",
 		"--property", "Restart=on-failure",
 	}
+	args = append(args, sandboxProps(spec)...)
 	for key, value := range spec.Env {
 		args = append(args, "--setenv", key+"="+value)
 	}
 	args = append(args, "--")
 	return append(args, spec.Command...)
+}
+
+// sandboxProps confines the process to its own server directory: the OS is
+// read-only, a tmpfs replaces the servers root so sibling directories do not
+// exist inside the unit's mount namespace, and only the server's own
+// directory is bound back writable. MemoryDenyWriteExecute is deliberately
+// not set — JIT runtimes like the JVM need W^X exceptions.
+func sandboxProps(spec Spec) []string {
+	serversRoot := filepath.Dir(spec.Directory)
+	return []string{
+		"--property", "NoNewPrivileges=yes",
+		"--property", "PrivateTmp=yes",
+		"--property", "PrivateDevices=yes",
+		"--property", "ProtectSystem=strict",
+		"--property", "ProtectHome=yes",
+		"--property", "ProtectKernelTunables=yes",
+		"--property", "ProtectKernelModules=yes",
+		"--property", "ProtectControlGroups=yes",
+		"--property", "ProtectProc=invisible",
+		"--property", "RestrictSUIDSGID=yes",
+		"--property", "LockPersonality=yes",
+		"--property", "TemporaryFileSystem=" + serversRoot,
+		"--property", "BindPaths=" + spec.Directory,
+		"--property", "ReadWritePaths=" + spec.Directory,
+	}
 }
 
 func (s *Systemd) Stop(ctx context.Context, id string) error {
@@ -178,8 +212,9 @@ func (s *Systemd) RunInstall(ctx context.Context, spec Spec, script string) ([]b
 		"--uid", spec.UnixUser,
 		"--gid", spec.UnixUser,
 		"--working-directory", spec.Directory,
-		"--setenv", "SERVER_DIR=" + spec.Directory,
 	}
+	args = append(args, sandboxProps(spec)...)
+	args = append(args, "--setenv", "SERVER_DIR="+spec.Directory)
 	for key, value := range spec.Env {
 		args = append(args, "--setenv", key+"="+value)
 	}

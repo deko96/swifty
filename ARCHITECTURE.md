@@ -91,9 +91,16 @@ Each game server gets:
    policies, and OOM handling for free.
 3. **Disk quotas** — XFS project quotas (best: per-directory) or ext4 user
    quotas as fallback.
-4. **rlimits** (open files, core dumps) and an optional hardened mode using
-   Linux namespaces (mount + PID via `unshare`/`bubblewrap`) for untrusted
-   customers — off by default so plain dedicated-server binaries "just work".
+4. **Mount-namespace sandboxing, on by default**: units run with
+   `ProtectSystem=strict` (OS read-only), a tmpfs over the servers root with
+   only the unit's own directory bind-mounted back (sibling servers are
+   invisible, not just unreadable), `ProtectHome=`, `PrivateDevices=`,
+   `ProtectProc=invisible`, and `RestrictSUIDSGID=`. Server homes are 0750
+   and their users are `nologin` — customers never get system shell or SFTP
+   accounts; file access goes through the daemon's jailed SFTP only.
+5. An optional further-hardened mode (seccomp `SystemCallFilter=`, network
+   restrictions) for untrusted customers — off by default so plain
+   dedicated-server binaries "just work".
 
 This is exactly the pre-Docker hosting model, done with today's kernel
 features. It is *lighter* than Docker (no image layers, no overlayfs, native
